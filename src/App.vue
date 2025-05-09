@@ -48,6 +48,8 @@ const showLogin = ref(true);
 const isAuthenticated = ref(!!localStorage.getItem('token'));
 
 // Axios mit Token vorbereiten
+axios.defaults.baseURL = import.meta.env.VITE_API_URL;
+axios.defaults.withCredentials = true;
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = token;
