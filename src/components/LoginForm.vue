@@ -28,13 +28,15 @@ const login = async () => {
       username: username.value,
       password: password.value
     });
+    console.log('Login response:', res.data);
 
     localStorage.setItem('token', res.data.token);
     localStorage.setItem('username', res.data.username);
     emit('login-success', res.data.username);
   } catch (e) {
-    console.error(e);
-    error.value = 'Login fehlgeschlagen';
+    console.error('Login error:', e);
+    alert('Fehler: ' + (e.response?.data?.message || e.message));
+
   }
 };
 </script>
