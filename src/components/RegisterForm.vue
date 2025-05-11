@@ -28,9 +28,11 @@ const register = async () => {
       username: username.value,
       password: password.value
     });
-    message.value = 'Registrierung erfolgreich! Du kannst dich jetzt einloggen.';
+
+    message.value = 'Registrierung erfolgreich!';
   } catch (e) {
-    message.value = 'Registrierung fehlgeschlagen. Benutzername evtl. vergeben.';
+    console.error(e);
+    message.value = 'Fehler: Benutzer existiert evtl. schon.';
   }
 };
 </script>
@@ -43,7 +45,6 @@ const register = async () => {
   height: 100vh;
   background: #f2f2f2;
 }
-
 .login-box {
   background: white;
   padding: 30px;
@@ -52,51 +53,37 @@ const register = async () => {
   width: 300px;
   text-align: center;
 }
-
-.login-box h2 {
-  margin-bottom: 20px;
-}
-
 input {
-  display: block;
   width: 100%;
   padding: 10px;
   margin: 10px 0;
   border-radius: 8px;
   border: 1px solid #ccc;
-  font-size: 14px;
 }
-
 button {
   width: 100%;
   padding: 10px;
   background-color: #2196f3;
   color: white;
-  font-weight: bold;
   border: none;
   border-radius: 8px;
+  font-weight: bold;
   cursor: pointer;
-  font-size: 15px;
 }
-
 button:hover {
   background-color: #1976d2;
 }
-
+.message {
+  margin-top: 10px;
+  color: #2e7d32;
+}
 .switch {
-  margin-top: 12px;
+  margin-top: 15px;
   font-size: 14px;
 }
-
 .switch a {
   color: #2196f3;
   font-weight: bold;
   cursor: pointer;
-}
-
-.message {
-  margin-top: 10px;
-  font-size: 14px;
-  color: #388e3c;
 }
 </style>
