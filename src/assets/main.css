@@ -1,35 +1,39 @@
 @import './base.css';
 
+:root {
+  --brand-green: #4caf50;
+  --brand-green-dark: #2e7d32;
+  --surface: rgba(255, 255, 255, 0.9);
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top, rgba(76, 175, 80, 0.2), transparent 45%),
+    linear-gradient(160deg, #f3f7f4 0%, #e8f2ec 45%, #eef4f8 100%);
+}
+
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-weight: normal;
+  width: 100%;
+  min-height: 100vh;
+  padding: 2rem 1rem;
 }
 
 a,
 .green {
   text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
+  color: var(--brand-green-dark);
+  transition: color 0.2s ease;
 }
 
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
+a:hover {
+  color: var(--brand-green);
 }
 
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
-
+@media (max-width: 640px) {
   #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
+    padding: 1rem 0.75rem;
   }
 }
