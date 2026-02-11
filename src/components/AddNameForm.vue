@@ -1,17 +1,26 @@
 <template>
   <div class="input-section">
-    <input v-model="localName" placeholder="Neuen Namen eingeben" />
-    <button @click="submit">➕ Hinzufügen</button>
+    <input v-model="localName" placeholder="Neuen Namen eingeben" :disabled="disabled" />
+    <button @click="submit" :disabled="disabled">➕ Hinzufügen</button>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue';
 
+const props = defineProps({
+  disabled: {
+    type: Boolean,
+    default: false
+  }
+});
+
 const emit = defineEmits(['add']);
 const localName = ref('');
 
 const submit = () => {
+  if (props.disabled) return;
+
   const trimmed = localName.value.trim();
   if (trimmed) {
     emit('add', trimmed);
@@ -42,5 +51,10 @@ button {
 }
 button:hover {
   background-color: #e03e3e;
+}
+button:disabled,
+input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

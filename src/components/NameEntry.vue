@@ -6,18 +6,26 @@
     <span class="time" v-if="data.lastClickedAt">
       Letzter Klick: {{ formatDate(data.lastClickedAt) }}
     </span>
-    <button class="increment" @click="$emit('increment', name)">+1</button>
-    <button class="delete" @click="$emit('delete', name)">🗑️</button>
+    <button class="increment" :disabled="disabledIncrement" @click="$emit('increment', name)">+1</button>
+    <button class="delete" :disabled="disabledDelete" @click="$emit('delete', name)">🗑️</button>
   </div>
 </template>
 
 <script setup>
-import {computed} from 'vue';
+import { computed } from 'vue';
 
 const props = defineProps({
   name: String,
   data: Object,
-  valuePerClick: Number
+  valuePerClick: Number,
+  disabledIncrement: {
+    type: Boolean,
+    default: false
+  },
+  disabledDelete: {
+    type: Boolean,
+    default: false
+  }
 });
 
 defineEmits(['increment', 'delete']);
@@ -47,11 +55,14 @@ const euroBetrag = computed(() => {
   font-weight: bold;
 }
 
-.count, .value, .time {
+.count,
+.value,
+.time {
   margin-top: 4px;
 }
 
-.increment, .delete {
+.increment,
+.delete {
   margin-top: 6px;
   padding: 6px 10px;
   border: none;
@@ -67,5 +78,11 @@ const euroBetrag = computed(() => {
 .delete {
   background-color: #e74c3c;
   color: white;
+}
+
+.increment:disabled,
+.delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

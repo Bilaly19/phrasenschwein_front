@@ -2,10 +2,11 @@
   <div class="login-container">
     <div class="login-box">
       <h2>📝 Registrieren</h2>
-      <input v-model="username" placeholder="Benutzername" />
-      <input v-model="password" type="password" placeholder="Passwort" />
-      <button @click="register">Konto erstellen</button>
+      <input v-model="username" placeholder="Benutzername" :disabled="isSubmitting" />
+      <input v-model="password" type="password" placeholder="Passwort" :disabled="isSubmitting" />
+      <button @click="register" :disabled="isSubmitting">{{ isSubmitting ? 'Bitte warten…' : 'Konto erstellen' }}</button>
       <p class="message" v-if="message">{{ message }}</p>
+      <p class="error" v-if="error">{{ error }}</p>
       <p class="switch">
         Schon registriert? <a href="#" @click.prevent="$emit('switch')">Einloggen</a>
       </p>
@@ -15,24 +16,36 @@
 
 <script setup>
 import { ref } from 'vue';
-import axios from 'axios';
+import { apiClient, getErrorMessage } from '../api/client';
 
-const emit = defineEmits(['switch']);
+defineEmits(['switch']);
 const username = ref('');
 const password = ref('');
 const message = ref('');
+const error = ref('');
+const isSubmitting = ref(false);
 
 const register = async () => {
+  message.value = '';
+  error.value = '';
+
+  if (!username.value.trim() || !password.value.trim()) {
+    error.value = 'Bitte Benutzername und Passwort eingeben.';
+    return;
+  }
+
+  isSubmitting.value = true;
   try {
-    await axios.post('http://localhost:3000/api/register', {
+    await apiClient.post('/api/register', {
       username: username.value,
       password: password.value
     });
 
-    message.value = 'Registrierung erfolgreich!';
+    message.value = 'Registrierung erfolgreich! Du kannst dich jetzt einloggen.';
   } catch (e) {
-    console.error(e);
-    message.value = 'Fehler: Benutzer existiert evtl. schon.';
+    error.value = getErrorMessage(e, 'Registrierung fehlgeschlagen.');
+  } finally {
+    isSubmitting.value = false;
   }
 };
 </script>
@@ -73,9 +86,17 @@ button {
 button:hover {
   background-color: #1976d2;
 }
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 .message {
   margin-top: 10px;
   color: #2e7d32;
+}
+.error {
+  margin-top: 10px;
+  color: #d32f2f;
 }
 .switch {
   margin-top: 15px;
