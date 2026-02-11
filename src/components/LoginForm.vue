@@ -2,9 +2,9 @@
   <div class="login-container">
     <div class="login-box">
       <h2>🔐 Login</h2>
-      <input v-model="username" placeholder="Benutzername" />
-      <input v-model="password" type="password" placeholder="Passwort" />
-      <button @click="login">Einloggen</button>
+      <input v-model="localUsername" placeholder="Benutzername" :disabled="isSubmitting" />
+      <input v-model="password" type="password" placeholder="Passwort" :disabled="isSubmitting" />
+      <button @click="login" :disabled="isSubmitting">{{ isSubmitting ? 'Bitte warten…' : 'Einloggen' }}</button>
       <p class="error" v-if="error">{{ error }}</p>
       <p class="switch">
         Noch kein Konto? <a href="#" @click.prevent="$emit('switch')">Registrieren</a>
@@ -15,28 +15,37 @@
 
 <script setup>
 import { ref } from 'vue';
-import axios from 'axios';
+import { apiClient, getErrorMessage } from '../api/client';
+import { useAuth } from '../stores/auth';
 
 const emit = defineEmits(['login-success', 'switch']);
-const username = ref('');
+const localUsername = ref('');
 const password = ref('');
 const error = ref('');
+const isSubmitting = ref(false);
+const { login: loginAuth } = useAuth();
 
 const login = async () => {
+  error.value = '';
+
+  if (!localUsername.value.trim() || !password.value.trim()) {
+    error.value = 'Bitte Benutzername und Passwort eingeben.';
+    return;
+  }
+
+  isSubmitting.value = true;
   try {
-    const res = await axios.post('http://localhost:3000/api/login', {
-      username: username.value,
+    const res = await apiClient.post('/api/login', {
+      username: localUsername.value,
       password: password.value
     });
-    console.log('Login response:', res.data);
 
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem('username', res.data.username);
-    emit('login-success', res.data.username);
+    loginAuth(res.data.token, res.data.username);
+    emit('login-success');
   } catch (e) {
-    console.error('Login error:', e);
-    alert('Fehler: ' + (e.response?.data?.message || e.message));
-
+    error.value = getErrorMessage(e, 'Login fehlgeschlagen.');
+  } finally {
+    isSubmitting.value = false;
   }
 };
 </script>
@@ -76,6 +85,10 @@ button {
 }
 button:hover {
   background-color: #43a047;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 .error {
   margin-top: 10px;
