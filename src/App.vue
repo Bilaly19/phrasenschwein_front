@@ -1,6 +1,19 @@
 <template>
-  <div class="container" v-if="isAuthenticated">
-    <h1 class="main-title">BandY's Phrasenschwein 🐷</h1>
+  <div class="app-shell">
+    <header class="top-bar" v-if="paypalUrl">
+      <a
+        :href="paypalUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="donate-button"
+        title="Unterstütze das Phrasenschwein"
+      >
+        ❤️ Spenden
+      </a>
+    </header>
+
+    <div class="container" v-if="isAuthenticated">
+      <h1 class="main-title">BandY's Phrasenschwein 🐷</h1>
 
     <p class="welcome">
       Eingeloggt als: {{ username }}
@@ -17,28 +30,30 @@
       🔄 Alle Zähler zurücksetzen
     </button>
 
-    <div class="entries">
-      <NameEntry
-        v-for="(entry, name) in names"
-        :key="name"
-        :name="name"
-        :data="entry"
-        :valuePerClick="safeValuePerClick"
-        :disabledIncrement="isNamePending(name)"
-        :disabledDelete="isNamePending(name)"
-        @increment="increment"
-        @delete="deleteName"
-      />
+      <div class="entries">
+        <NameEntry
+          v-for="(entry, name) in names"
+          :key="name"
+          :name="name"
+          :data="entry"
+          :valuePerClick="safeValuePerClick"
+          :disabledIncrement="isNamePending(name)"
+          :disabledDelete="isNamePending(name)"
+          @increment="increment"
+          @delete="deleteName"
+        />
+      </div>
     </div>
-  </div>
 
-  <div v-else>
-    <LoginForm v-if="showLogin" @login-success="onLogin" @switch="showLogin = false" />
-    <RegisterForm v-else @switch="showLogin = true" />
+    <div v-else>
+      <LoginForm v-if="showLogin" @login-success="onLogin" @switch="showLogin = false" />
+      <RegisterForm v-else @switch="showLogin = true" />
+    </div>
   </div>
 </template>
 
 <script setup>
+import axios from 'axios';
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import NameEntry from './components/NameEntry.vue';
 import AddNameForm from './components/AddNameForm.vue';
@@ -53,6 +68,7 @@ const { username, isAuthenticated, logout } = useAuth();
 const names = ref({});
 const valuePerClick = ref(0.5);
 const showLogin = ref(true);
+const paypalUrl = ref((import.meta.env.VITE_PAYPAL_URL || '').trim());
 const errorMessage = ref('');
 const infoMessage = ref('');
 const isInitializingConfig = ref(false);
@@ -209,8 +225,26 @@ const onUnauthorized = (event) => {
   infoMessage.value = event.detail || 'Bitte erneut einloggen.';
 };
 
+const loadPaypalUrl = async () => {
+  if (paypalUrl.value) return;
+
+  const apiBase = import.meta.env.VITE_API_URL;
+  if (!apiBase) return;
+
+  try {
+    const res = await axios.get(`${apiBase}/api/config/paypal`, {
+      withCredentials: true
+    });
+    const url = res.data?.paypalUrl || res.data?.url || '';
+    paypalUrl.value = typeof url === 'string' ? url.trim() : '';
+  } catch {
+    paypalUrl.value = '';
+  }
+};
+
 onMounted(async () => {
   window.addEventListener('auth:unauthorized', onUnauthorized);
+  await loadPaypalUrl();
 
   if (isAuthenticated.value) {
     await Promise.all([fetchNames(), loadConfig()]);
@@ -241,6 +275,38 @@ watch(valuePerClick, (nextVal) => {
 </script>
 
 <style scoped>
+.app-shell {
+  width: min(860px, 100%);
+  margin: 0 auto;
+}
+
+.top-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.donate-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.donate-button:hover {
+  transform: translateY(-1px);
+  background: #dbeafe;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.15);
+}
+
 .main-title {
   font-size: clamp(1.8rem, 2.8vw, 2.2rem);
   margin-bottom: 0.5rem;
@@ -249,8 +315,7 @@ watch(valuePerClick, (nextVal) => {
 }
 
 .container {
-  width: min(860px, 100%);
-  margin: 0 auto;
+  width: 100%;
   padding: 1.5rem;
   color: #111827;
   background: rgba(255, 255, 255, 0.92);
@@ -298,6 +363,16 @@ watch(valuePerClick, (nextVal) => {
 }
 
 @media (max-width: 640px) {
+  .top-bar {
+    justify-content: center;
+    margin-bottom: 0.6rem;
+  }
+
+  .donate-button {
+    width: 100%;
+    justify-content: center;
+  }
+
   .container {
     border-radius: 14px;
     padding: 1rem;
