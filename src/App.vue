@@ -252,6 +252,7 @@ watch(valuePerClick, (nextVal) => {
   width: min(860px, 100%);
   margin: 0 auto;
   padding: 1.5rem;
+  color: #111827;
   background: rgba(255, 255, 255, 0.92);
   border-radius: 20px;
   box-shadow: 0 16px 40px rgba(31, 41, 55, 0.12);
