@@ -10,6 +10,10 @@ const router = createRouter({
             children: [
                 {
                     path: '/',
+                    redirect: '/phrasenschwein'
+                },
+                {
+                    path: '/dashboard',
                     name: 'dashboard',
                     component: () => import('@/views/Dashboard.vue')
                 },
@@ -111,6 +115,11 @@ const router = createRouter({
                     path: '/start/documentation',
                     name: 'documentation',
                     component: () => import('@/views/pages/Documentation.vue')
+                },
+                {
+                    path: '/phrasenschwein',
+                    name: 'phrasenschwein',
+                    component: () => import('@/views/phrasenschwein/PhrasenschweinView.vue')
                 }
             ]
         },

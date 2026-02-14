@@ -6,6 +6,7 @@ import Aura from '@primeuix/themes/aura';
 import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
 import ToastService from 'primevue/toastservice';
+import 'primeicons/primeicons.css';
 
 import '@/assets/tailwind.css';
 import '@/assets/styles.scss';
