@@ -11,7 +11,7 @@ import RegisterForm from './components/RegisterForm.vue';
 import { authApi, clearAuthorizationToken, getErrorMessage, namesApi } from '@/api';
 import { useAuth } from '@/stores/auth';
 
-const { token, username, isAuthenticated, login: setAuthState, reset: resetAuth } = useAuth();
+const { token, username, roles, isAuthenticated, login: setAuthState, reset: resetAuth } = useAuth();
 const toast = useToast();
 const confirm = useConfirm();
 
@@ -63,6 +63,7 @@ const namesCount = computed(() => nameEntries.value.length);
 const totalClicks = computed(() => nameEntries.value.reduce((sum, entry) => sum + (Number(entry.data?.count) || 0), 0));
 const totalAmount = computed(() => (totalClicks.value * safeValuePerClick.value).toFixed(2));
 const hasNames = computed(() => namesCount.value > 0);
+const isAdmin = computed(() => roles.value.includes('admin'));
 
 const setNamePending = (name, active) => {
     const next = new Set(pendingNames.value);
@@ -270,7 +271,8 @@ const initializeAuth = async () => {
     try {
         const session = await authApi.getSession();
         const resolvedUsername = session?.username || username.value;
-        setAuthState(storedToken, resolvedUsername);
+        const resolvedRoles = session?.roles ?? session?.role ?? session?.user?.roles ?? session?.user?.role ?? [];
+        setAuthState(storedToken, resolvedUsername, resolvedRoles);
         showLogin.value = false;
         authDebug('[auth] session validation result: valid');
         await Promise.all([fetchNames(), loadConfig()]);
@@ -396,7 +398,16 @@ watch(infoMessage, (message) => {
                             </div>
                         </div>
 
-                        <Button @click="requestResetAll" :disabled="loading.reset || loading.fetchNames" icon="pi pi-refresh" label="Alle Zaehler zuruecksetzen" severity="secondary" size="small" class="p-button-sm" />
+                        <Button
+                            v-if="isAdmin"
+                            @click="requestResetAll"
+                            :disabled="loading.reset || loading.fetchNames"
+                            icon="pi pi-refresh"
+                            label="Alle Zaehler zuruecksetzen"
+                            severity="secondary"
+                            size="small"
+                            class="p-button-sm"
+                        />
                     </div>
                 </Panel>
 

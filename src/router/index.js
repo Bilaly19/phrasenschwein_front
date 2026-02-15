@@ -1,4 +1,5 @@
 import AppLayout from '@/layout/AppLayout.vue';
+import { useAuth } from '@/stores/auth';
 import { createRouter, createWebHistory } from 'vue-router';
 
 const router = createRouter({
@@ -19,6 +20,12 @@ const router = createRouter({
                     path: '/dashboard',
                     name: 'dashboard',
                     component: () => import('@/views/Dashboard.vue')
+                },
+                {
+                    path: '/admin',
+                    name: 'admin',
+                    component: () => import('@/views/admin/AdminView.vue'),
+                    meta: { role: 'admin' }
                 },
                 {
                     path: '/pages/empty',
@@ -51,8 +58,34 @@ const router = createRouter({
             path: '/pages/notfound',
             name: 'notfound',
             component: () => import('@/views/pages/NotFound.vue')
+        },
+        {
+            path: '/forbidden',
+            name: 'forbidden',
+            component: () => import('@/views/pages/Forbidden.vue')
         }
     ]
+});
+
+router.beforeEach((to) => {
+    const { roles } = useAuth();
+    const requiredRole = to.meta?.role;
+
+    if (!requiredRole) {
+        return true;
+    }
+
+    const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    const hasRequiredRole = requiredRoles.some((role) => roles.value.includes(role));
+
+    if (hasRequiredRole) {
+        return true;
+    }
+
+    return {
+        name: 'forbidden',
+        query: { redirect: to.fullPath }
+    };
 });
 
 export default router;

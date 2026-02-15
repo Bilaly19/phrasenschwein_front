@@ -1,8 +1,12 @@
 <script setup>
 import { useLayout } from '@/layout/composables/layout';
+import { useAuth } from '@/stores/auth';
+import { computed } from 'vue';
 import AppConfigurator from './AppConfigurator.vue';
 
 const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
+const { roles } = useAuth();
+const isAdmin = computed(() => roles.value.includes('admin'));
 </script>
 
 <template>
@@ -61,6 +65,7 @@ const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
                 <div class="layout-topbar-menu-content">
                     <Button text class="layout-topbar-action" icon="pi pi-calendar" label="Calendar" />
                     <Button text class="layout-topbar-action" icon="pi pi-inbox" label="Messages" />
+                    <Button v-if="isAdmin" as="router-link" to="/admin" text class="layout-topbar-action" icon="pi pi-shield" label="Admin" />
                     <Button text class="layout-topbar-action" icon="pi pi-user" label="Profile" />
                 </div>
             </div>

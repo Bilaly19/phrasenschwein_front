@@ -32,17 +32,19 @@ const login = async () => {
         });
 
         let resolvedUsername = res.username || normalizedUsername;
+        let resolvedRoles = [];
 
         try {
             const session = await authApi.getSession();
             if (session?.username) {
                 resolvedUsername = session.username;
             }
+            resolvedRoles = session?.roles ?? session?.role ?? session?.user?.roles ?? session?.user?.role ?? [];
         } catch (sessionError) {
             authDebug('[auth] login session sync failed:', sessionError?.status ?? sessionError);
         }
 
-        loginAuth(res.token, resolvedUsername);
+        loginAuth(res.token, resolvedUsername, resolvedRoles);
         emit('login-success');
     } catch (e) {
         clearAuthorizationToken();

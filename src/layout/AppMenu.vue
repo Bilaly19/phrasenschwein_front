@@ -1,8 +1,12 @@
 <script setup>
-import { ref } from 'vue';
+import { useAuth } from '@/stores/auth';
+import { computed } from 'vue';
 import AppMenuItem from './AppMenuItem.vue';
 
-const model = ref([
+const { roles } = useAuth();
+const isAdmin = computed(() => roles.value.includes('admin'));
+
+const model = computed(() => [
     {
         label: 'Navigation',
         items: [
@@ -15,6 +19,12 @@ const model = ref([
                 label: 'Dashboard',
                 icon: 'pi pi-fw pi-home',
                 to: '/dashboard'
+            },
+            {
+                label: 'Admin',
+                icon: 'pi pi-fw pi-shield',
+                to: '/admin',
+                visible: isAdmin.value
             }
         ]
     },
