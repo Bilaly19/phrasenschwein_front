@@ -5,17 +5,38 @@ import { getAuthToken, useAuth } from '../stores/auth';
 
 const apiBaseUrl = resolveApiBaseUrl();
 
+const resolveRequestPath = (url = '') => {
+    const normalizedUrl = String(url || '').trim();
+    if (!normalizedUrl) return '';
+
+    try {
+        const fallbackBase = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+        return new URL(normalizedUrl, apiBaseUrl || fallbackBase).pathname;
+    } catch {
+        return normalizedUrl.split('?')[0];
+    }
+};
+
+const isAuthExemptPath = (url = '') => {
+    const path = resolveRequestPath(url);
+    return path === '/api/login' || path === '/api/register';
+};
+
 const shouldHandleAsAuthFailure = (status, url = '') => {
     if (status !== 401) return false;
-    const normalized = String(url || '');
-    return !normalized.endsWith('/api/login') && !normalized.endsWith('/api/register');
+    return !isAuthExemptPath(url);
 };
 
 const requiresAuth = (url = '') => {
-    const normalized = String(url || '');
-    if (!normalized.startsWith('/api/')) return false;
-    if (normalized === '/api/login' || normalized === '/api/register') return false;
-    return true;
+    const path = resolveRequestPath(url);
+    if (!path.startsWith('/api/')) return false;
+    return !isAuthExemptPath(path);
+};
+
+const authDebug = (...args) => {
+    if (import.meta.env.DEV) {
+        console.debug(...args);
+    }
 };
 
 export const httpClient = axios.create({
@@ -29,13 +50,23 @@ export const clearAuthorizationToken = () => {
 
 httpClient.interceptors.request.use((config) => {
     const token = getAuthToken();
+    const requestPath = resolveRequestPath(config?.url);
+    const isProtectedRequest = requiresAuth(requestPath);
+    const isAuthExemptRequest = isAuthExemptPath(requestPath);
+
+    authDebug('[auth] interceptor token read:', token ? 'present' : 'missing', requestPath || config?.url || '<unknown>');
+
     if (!config.headers) {
         config.headers = {};
     }
 
-    if (token && requiresAuth(config?.url)) {
-        config.headers.Authorization = `Bearer ${token}`;
-    } else {
+    if (isProtectedRequest) {
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        } else {
+            delete config.headers.Authorization;
+        }
+    } else if (isAuthExemptRequest) {
         delete config.headers.Authorization;
     }
 
@@ -63,4 +94,3 @@ httpClient.interceptors.response.use(
         return Promise.reject(normalizedError);
     }
 );
-

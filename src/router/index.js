@@ -17,9 +17,24 @@ const router = createRouter({
                     redirect: '/phrasenschwein'
                 },
                 {
+                    path: '/phrasenschwein',
+                    name: 'phrasenschwein',
+                    component: () => import('@/views/phrasenschwein/PhrasenschweinView.vue')
+                },
+                {
                     path: '/dashboard',
                     name: 'dashboard',
                     component: () => import('@/views/Dashboard.vue')
+                },
+                {
+                    path: '/einstellungen',
+                    name: 'einstellungen',
+                    component: () => import('@/views/pages/Empty.vue')
+                },
+                {
+                    path: '/statistik',
+                    name: 'statistik',
+                    component: () => import('@/views/pages/Empty.vue')
                 },
                 {
                     path: '/admin',
@@ -43,11 +58,6 @@ const router = createRouter({
                     component: () => import('@/views/pages/Documentation.vue')
                 }
             ]
-        },
-        {
-            path: '/phrasenschwein',
-            name: 'phrasenschwein',
-            component: () => import('@/views/phrasenschwein/PhrasenschweinView.vue')
         },
         {
             path: '/landing',

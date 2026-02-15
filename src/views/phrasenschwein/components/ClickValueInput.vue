@@ -22,7 +22,7 @@ const onInput = (nextValue) => {
 </script>
 
 <template>
-    <div class="p-fluid flex flex-col gap-2">
+    <div class="p-fluid flex max-w-sm flex-col gap-2">
         <label for="clickValue" class="text-sm font-medium">Wert pro Klick (EUR)</label>
         <IconField>
             <InputIcon class="pi pi-euro" />

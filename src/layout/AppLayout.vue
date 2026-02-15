@@ -1,7 +1,6 @@
 <script setup>
 import { useLayout } from '@/layout/composables/layout';
 import { computed } from 'vue';
-import AppFooter from './AppFooter.vue';
 import AppSidebar from './AppSidebar.vue';
 import AppTopbar from './AppTopbar.vue';
 
@@ -21,14 +20,15 @@ const containerClass = computed(() => {
 <template>
     <div class="layout-wrapper" :class="containerClass">
         <AppTopbar />
-        <AppSidebar />
-        <div class="layout-main-container">
-            <div class="layout-main">
-                <router-view />
+        <div class="layout-body">
+            <AppSidebar />
+            <div class="layout-main-container">
+                <main class="layout-main">
+                    <router-view />
+                </main>
             </div>
-            <AppFooter />
         </div>
         <div class="layout-mask animate-fadein" @click="hideMobileMenu" />
     </div>
-    <Toast />
+    <Toast position="top-right" />
 </template>

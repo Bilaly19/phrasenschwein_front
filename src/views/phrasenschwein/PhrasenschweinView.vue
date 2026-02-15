@@ -4,21 +4,23 @@ import { useConfirm } from 'primevue/useconfirm';
 import { useToast } from 'primevue/usetoast';
 import AppShell from './components/AppShell.vue';
 import NameEntry from './components/NameEntry.vue';
-import AddNameForm from './components/AddNameForm.vue';
 import ClickValueInput from './components/ClickValueInput.vue';
 import LoginForm from './components/LoginForm.vue';
 import RegisterForm from './components/RegisterForm.vue';
 import { authApi, clearAuthorizationToken, getErrorMessage, namesApi } from '@/api';
 import { useAuth } from '@/stores/auth';
+import { resolveSessionRoles } from '@/utils/authRoles';
 
-const { token, username, roles, isAuthenticated, login: setAuthState, reset: resetAuth } = useAuth();
+const { token, username, isAuthenticated, login: setAuthState, reset: resetAuth } = useAuth();
 const toast = useToast();
 const confirm = useConfirm();
 
 const names = ref({});
 const valuePerClick = ref(0.5);
-const showLogin = ref(true);
 const authInitialized = ref(false);
+const authMode = ref('login');
+const prefilledUsername = ref('');
+const pendingEnsureUsername = ref('');
 const paypalUrl = ref((import.meta.env.VITE_PAYPAL_URL || '').trim());
 const errorMessage = ref('');
 const infoMessage = ref('');
@@ -28,7 +30,6 @@ const pendingNames = ref(new Set());
 const loading = reactive({
     fetchNames: false,
     saveConfig: false,
-    add: false,
     reset: false,
     logout: false
 });
@@ -45,10 +46,19 @@ const authDebug = (...args) => {
 };
 
 const safeValuePerClick = computed(() => (Number.isFinite(valuePerClick.value) ? valuePerClick.value : 0));
+const ownEntryExists = computed(() => Boolean(username.value && Object.prototype.hasOwnProperty.call(names.value, username.value)));
 
 const clearMessages = () => {
     errorMessage.value = '';
     infoMessage.value = '';
+};
+
+const formatApiError = (error, fallback) => {
+    const baseMessage = getErrorMessage(error, fallback);
+    if (error?.code) {
+        return `[${error.code}] ${baseMessage}`;
+    }
+    return baseMessage;
 };
 
 const isNamePending = (name) => pendingNames.value.has(name);
@@ -63,7 +73,7 @@ const namesCount = computed(() => nameEntries.value.length);
 const totalClicks = computed(() => nameEntries.value.reduce((sum, entry) => sum + (Number(entry.data?.count) || 0), 0));
 const totalAmount = computed(() => (totalClicks.value * safeValuePerClick.value).toFixed(2));
 const hasNames = computed(() => namesCount.value > 0);
-const isAdmin = computed(() => roles.value.includes('admin'));
+const isOwnEntry = (entryName) => entryName === username.value;
 
 const setNamePending = (name, active) => {
     const next = new Set(pendingNames.value);
@@ -80,7 +90,7 @@ const fetchNames = async () => {
     try {
         names.value = await namesApi.getNames();
     } catch (error) {
-        errorMessage.value = getErrorMessage(error, 'Namen konnten nicht geladen werden.');
+        errorMessage.value = formatApiError(error, 'Namen konnten nicht geladen werden.');
     } finally {
         loading.fetchNames = false;
     }
@@ -94,7 +104,7 @@ const loadConfig = async () => {
         const nextValue = Number.parseFloat(config?.valuePerClick);
         valuePerClick.value = Number.isFinite(nextValue) ? nextValue : 0.5;
     } catch (error) {
-        errorMessage.value = getErrorMessage(error, 'Konfiguration konnte nicht geladen werden.');
+        errorMessage.value = formatApiError(error, 'Konfiguration konnte nicht geladen werden.');
     } finally {
         loading.saveConfig = false;
         isInitializingConfig.value = false;
@@ -108,23 +118,32 @@ const saveConfig = async (val) => {
     try {
         await namesApi.updateConfig(val);
     } catch (error) {
-        errorMessage.value = getErrorMessage(error, 'Konfiguration konnte nicht gespeichert werden.');
+        errorMessage.value = formatApiError(error, 'Konfiguration konnte nicht gespeichert werden.');
     } finally {
         loading.saveConfig = false;
     }
 };
 
-const addName = async (name) => {
-    clearMessages();
-    loading.add = true;
+const ensureOwnNameEntry = async (targetUsername = username.value, force = false) => {
+    const normalizedUsername = String(targetUsername || '').trim();
+    if (!normalizedUsername) {
+        return;
+    }
+
+    const hasOwnEntry = names.value && typeof names.value === 'object' && Object.prototype.hasOwnProperty.call(names.value, normalizedUsername);
+    if (!force && hasOwnEntry) {
+        return;
+    }
+
     try {
-        await namesApi.addName(name);
-        await fetchNames();
-        infoMessage.value = `"${name}" wurde hinzugefuegt.`;
+        await namesApi.incrementName(normalizedUsername);
+        names.value = await namesApi.getNames();
+        if (pendingEnsureUsername.value === normalizedUsername) {
+            pendingEnsureUsername.value = '';
+        }
+        authDebug('[auth] own username auto-added to names list:', normalizedUsername);
     } catch (error) {
-        errorMessage.value = getErrorMessage(error, 'Name konnte nicht hinzugefuegt werden.');
-    } finally {
-        loading.add = false;
+        authDebug('[auth] failed to auto-add own username to names list:', normalizedUsername, error?.status ?? error);
     }
 };
 
@@ -136,7 +155,7 @@ const increment = async (name) => {
         await fetchNames();
         infoMessage.value = `${name} wurde erhoeht.`;
     } catch (error) {
-        errorMessage.value = getErrorMessage(error, 'Zaehler konnte nicht erhoeht werden.');
+        errorMessage.value = formatApiError(error, 'Zaehler konnte nicht erhoeht werden.');
     } finally {
         setNamePending(name, false);
     }
@@ -150,21 +169,21 @@ const deleteName = async (name) => {
         await fetchNames();
         infoMessage.value = `"${name}" wurde geloescht.`;
     } catch (error) {
-        errorMessage.value = getErrorMessage(error, 'Name konnte nicht geloescht werden.');
+        errorMessage.value = formatApiError(error, 'Name konnte nicht geloescht werden.');
     } finally {
         setNamePending(name, false);
     }
 };
 
-const resetAll = async () => {
+const resetMine = async () => {
     clearMessages();
     loading.reset = true;
     try {
         await namesApi.resetNames();
         await fetchNames();
-        infoMessage.value = 'Alle Zaehler wurden zurueckgesetzt.';
+        infoMessage.value = 'Mein Zaehler wurde zurueckgesetzt.';
     } catch (error) {
-        errorMessage.value = getErrorMessage(error, 'Zaehler konnten nicht zurueckgesetzt werden.');
+        errorMessage.value = formatApiError(error, 'Zaehler konnte nicht zurueckgesetzt werden.');
     } finally {
         loading.reset = false;
     }
@@ -192,10 +211,10 @@ const requestDeleteName = (name) => {
     });
 };
 
-const requestResetAll = () => {
+const requestResetMine = () => {
     confirm.require({
-        message: 'Wirklich alle Zaehler zuruecksetzen?',
-        header: 'Alles zuruecksetzen',
+        message: 'Wirklich deinen Zaehler zuruecksetzen?',
+        header: 'Mein Zaehler',
         icon: 'pi pi-exclamation-triangle',
         rejectProps: {
             label: 'Abbrechen',
@@ -209,7 +228,7 @@ const requestResetAll = () => {
             size: 'small'
         },
         accept: () => {
-            void resetAll();
+            void resetMine();
         }
     });
 };
@@ -220,28 +239,48 @@ const handleLogout = async () => {
     try {
         await authApi.logout();
     } catch (error) {
-        errorMessage.value = getErrorMessage(error, 'Logout konnte nicht vollstaendig abgeschlossen werden.');
+        errorMessage.value = formatApiError(error, 'Logout konnte nicht vollstaendig abgeschlossen werden.');
     } finally {
         clearAuthorizationToken();
         resetAuth();
         names.value = {};
-        showLogin.value = true;
         authDebug('[auth] logout state reset');
         loading.logout = false;
     }
 };
 
 const onLogin = async () => {
-    showLogin.value = true;
     clearMessages();
+    authMode.value = 'login';
     await Promise.all([fetchNames(), loadConfig()]);
+    const targetUsername = pendingEnsureUsername.value || username.value;
+    await ensureOwnNameEntry(targetUsername, Boolean(pendingEnsureUsername.value));
+    toast.add({ severity: 'success', summary: 'Erfolg', detail: 'Login erfolgreich', life: 2800 });
+};
+
+const onRegisterSuccess = async (payload) => {
+    clearMessages();
+    const nextUsername = String(payload?.username || '').trim();
+    const nextToken = String(payload?.token || '').trim();
+    const nextRoles = payload?.roles || [];
+    pendingEnsureUsername.value = nextUsername;
+    toast.add({ severity: 'success', summary: 'Erfolg', detail: 'Registrierung erfolgreich', life: 2800 });
+
+    if (nextToken) {
+        setAuthState(nextToken, nextUsername, nextRoles);
+        await onLogin();
+        return;
+    }
+
+    prefilledUsername.value = nextUsername;
+    authMode.value = 'login';
 };
 
 const onUnauthorized = (event) => {
     clearAuthorizationToken();
     resetAuth();
     names.value = {};
-    showLogin.value = true;
+    authMode.value = 'login';
     infoMessage.value = event.detail || 'Bitte erneut einloggen.';
 };
 
@@ -254,7 +293,6 @@ const initializeAuth = async () => {
         clearAuthorizationToken();
         resetAuth();
         names.value = {};
-        showLogin.value = true;
         authInitialized.value = true;
         return;
     }
@@ -263,24 +301,24 @@ const initializeAuth = async () => {
         clearAuthorizationToken();
         resetAuth();
         names.value = {};
-        showLogin.value = true;
         authInitialized.value = true;
         return;
     }
 
     try {
         const session = await authApi.getSession();
+        authDebug('[auth] /api/session status:', 200);
         const resolvedUsername = session?.username || username.value;
-        const resolvedRoles = session?.roles ?? session?.role ?? session?.user?.roles ?? session?.user?.role ?? [];
+        const resolvedRoles = resolveSessionRoles(session);
         setAuthState(storedToken, resolvedUsername, resolvedRoles);
-        showLogin.value = false;
         authDebug('[auth] session validation result: valid');
         await Promise.all([fetchNames(), loadConfig()]);
+        await ensureOwnNameEntry();
     } catch (error) {
+        authDebug('[auth] /api/session status:', error?.status ?? 'n/a');
         clearAuthorizationToken();
         resetAuth();
         names.value = {};
-        showLogin.value = true;
         authDebug('[auth] session validation result: invalid', error?.status ?? error);
     } finally {
         authInitialized.value = true;
@@ -340,19 +378,18 @@ watch(infoMessage, (message) => {
 
 <template>
     <div class="p-2">
-        <Toast position="top-right" />
         <ConfirmDialog />
 
-        <div v-if="authInitialized && isAuthenticated" class="mx-auto w-full max-w-4xl text-sm">
+        <div v-if="authInitialized && isAuthenticated" class="mx-auto w-full max-w-6xl text-sm">
             <AppShell>
                 <template #title>
                     <div class="min-w-0">
                         <h1 class="text-xl font-semibold leading-tight">Phrasenschwein</h1>
-                        <p class="mt-1 text-sm text-color-secondary">Verwalte Klicks, Namen und den Wert pro Klick.</p>
+                        <p class="mt-1 text-sm text-color-secondary">Verwalte Klicks und den Wert pro Klick.</p>
                     </div>
                 </template>
                 <template #actions>
-                    <Tag :value="username" severity="info" class="text-xs w-fit" />
+                    <Tag :value="`Eingeloggt als @${username}`" severity="info" class="text-xs w-fit" />
                     <Button
                         v-if="paypalUrl"
                         as="a"
@@ -382,37 +419,14 @@ watch(infoMessage, (message) => {
                 </div>
 
                 <Panel header="Konfiguration" class="mb-3">
-                    <p class="mb-3 text-sm text-color-secondary">Konfiguration und Eingaben an einem Ort.</p>
                     <div class="p-fluid">
-                        <Message v-if="errorMessage" severity="error" size="small" class="mb-3">{{ errorMessage }}</Message>
-                        <Message v-if="infoMessage" severity="success" size="small" class="mb-3">{{ infoMessage }}</Message>
-
-                        <div class="mb-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
-                            <div>
-                                <h3 class="mb-3 text-sm font-medium">Wert pro Klick</h3>
-                                <ClickValueInput v-model="valuePerClick" :disabled="loading.saveConfig" />
-                            </div>
-                            <div>
-                                <h3 class="mb-3 text-sm font-medium">Name hinzufuegen</h3>
-                                <AddNameForm @add="addName" :disabled="loading.add || loading.fetchNames" />
-                            </div>
-                        </div>
-
-                        <Button
-                            v-if="isAdmin"
-                            @click="requestResetAll"
-                            :disabled="loading.reset || loading.fetchNames"
-                            icon="pi pi-refresh"
-                            label="Alle Zaehler zuruecksetzen"
-                            severity="secondary"
-                            size="small"
-                            class="p-button-sm"
-                        />
+                        <ClickValueInput v-model="valuePerClick" :disabled="loading.saveConfig" />
                     </div>
                 </Panel>
 
                 <Panel header="Namensliste">
-                    <p class="mb-3 text-sm text-color-secondary">Klicks je Person erfassen und verwalten.</p>
+                    <p class="mb-3 text-sm text-color-secondary">Alle Usernamen mit Klickstand.</p>
+                    <Button @click="requestResetMine" :disabled="loading.reset || loading.fetchNames || !ownEntryExists" icon="pi pi-refresh" label="Mein Zaehler zuruecksetzen" severity="secondary" size="small" class="mb-3 p-button-sm" />
                     <div v-if="hasNames" class="grid grid-cols-1 gap-3 md:grid-cols-2">
                         <NameEntry
                             v-for="entry in nameEntries"
@@ -420,8 +434,10 @@ watch(infoMessage, (message) => {
                             :name="entry.name"
                             :data="entry.data"
                             :valuePerClick="safeValuePerClick"
-                            :disabledIncrement="isNamePending(entry.name)"
-                            :disabledDelete="isNamePending(entry.name)"
+                            :canIncrement="isOwnEntry(entry.name)"
+                            :canDelete="isOwnEntry(entry.name)"
+                            :disabledIncrement="isNamePending(entry.name) || !isOwnEntry(entry.name)"
+                            :disabledDelete="isNamePending(entry.name) || !isOwnEntry(entry.name)"
                             @increment="increment"
                             @delete="requestDeleteName"
                         />
@@ -429,7 +445,7 @@ watch(infoMessage, (message) => {
                     <div v-else class="flex flex-col items-center justify-center rounded-border border border-dashed border-surface-300 px-4 py-6 text-center">
                         <i class="pi pi-users mb-2 text-3xl text-color-secondary"></i>
                         <p class="font-medium">Noch keine Namen vorhanden</p>
-                        <p class="mt-1 text-sm text-color-secondary">Fuege oben den ersten Namen hinzu.</p>
+                        <p class="mt-1 text-sm text-color-secondary">Es wurde noch kein Name erfasst.</p>
                         <div class="mt-3">
                             <Tag value="Leer" severity="secondary" />
                         </div>
@@ -438,12 +454,11 @@ watch(infoMessage, (message) => {
             </AppShell>
         </div>
 
-        <div v-else-if="authInitialized" class="mx-auto w-full max-w-4xl p-2 text-sm">
+        <div v-else-if="authInitialized" class="mx-auto w-full max-w-6xl p-2 text-sm">
             <div class="mx-auto w-full max-w-sm">
-                <LoginForm v-if="showLogin" @login-success="onLogin" @switch="showLogin = false" />
-                <RegisterForm v-else @switch="showLogin = true" />
+                <LoginForm v-if="authMode === 'login'" :prefill-username="prefilledUsername" @switch-register="authMode = 'register'" @login-success="onLogin" />
+                <RegisterForm v-else @switch="authMode = 'login'" @register-success="onRegisterSuccess" />
             </div>
         </div>
     </div>
 </template>
-

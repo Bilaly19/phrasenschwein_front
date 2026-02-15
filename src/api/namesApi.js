@@ -16,11 +16,6 @@ export const namesApi = {
         return response.data;
     },
 
-    async addName(name) {
-        const response = await httpClient.post('/api/add', { name });
-        return response.data;
-    },
-
     async incrementName(name) {
         const response = await httpClient.post(`/api/increment/${encodeURIComponent(name)}`);
         return response.data;

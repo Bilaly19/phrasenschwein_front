@@ -1,31 +1,52 @@
 <script setup>
 import { ref } from 'vue';
+import { useToast } from 'primevue/usetoast';
 import { authApi, getErrorMessage } from '@/api';
 
-defineEmits(['switch']);
+const emit = defineEmits(['switch', 'register-success']);
+const toast = useToast();
+const firstName = ref('');
+const lastName = ref('');
 const username = ref('');
 const password = ref('');
-const message = ref('');
 const error = ref('');
 const isSubmitting = ref(false);
 const fieldErrors = ref({
+    firstName: '',
+    lastName: '',
     username: '',
     password: ''
 });
 const USERNAME_REGEX = /^[a-zA-Z0-9._-]+$/;
+const getPendingNameEntryKey = (value) =>
+    `ps:pending-name-entry:${String(value || '')
+        .trim()
+        .toLowerCase()}`;
+const asObject = (value) => (value && typeof value === 'object' ? value : {});
+const extractToken = (payload) => {
+    const source = asObject(payload);
+    return String(source.token || source.accessToken || source.jwt || '').trim();
+};
 
 const resetErrors = () => {
     error.value = '';
-    fieldErrors.value = { username: '', password: '' };
+    fieldErrors.value = { firstName: '', lastName: '', username: '', password: '' };
 };
 
-const hasFieldErrors = (errors) => Boolean(errors.username || errors.password);
+const hasFieldErrors = (errors) => Boolean(errors.firstName || errors.lastName || errors.username || errors.password);
 
 const validateRegisterInput = (payload) => {
-    const nextFieldErrors = { username: '', password: '' };
+    const nextFieldErrors = { firstName: '', lastName: '', username: '', password: '' };
 
-    if (typeof payload.username !== 'string' || payload.username.length < 3 || payload.username.length > 40) {
-        nextFieldErrors.username = 'Benutzername muss 3-40 Zeichen lang sein.';
+    if (typeof payload.firstName !== 'string' || payload.firstName.length < 1 || payload.firstName.length > 80) {
+        nextFieldErrors.firstName = 'Vorname muss 1-80 Zeichen lang sein.';
+    }
+    if (typeof payload.lastName !== 'string' || payload.lastName.length < 1 || payload.lastName.length > 80) {
+        nextFieldErrors.lastName = 'Nachname muss 1-80 Zeichen lang sein.';
+    }
+
+    if (typeof payload.username !== 'string' || payload.username.length < 3 || payload.username.length > 24) {
+        nextFieldErrors.username = 'Benutzername muss 3-24 Zeichen lang sein.';
     } else if (!USERNAME_REGEX.test(payload.username)) {
         nextFieldErrors.username = 'Benutzername darf nur a-z, A-Z, 0-9, . _ - enthalten.';
     }
@@ -39,13 +60,15 @@ const validateRegisterInput = (payload) => {
 
 const toReadableValidationMessage = (path, message = '') => {
     if (!message) return '';
+    if (path === 'firstName') return message.replace(/^firstName\b/i, 'Vorname');
+    if (path === 'lastName') return message.replace(/^lastName\b/i, 'Nachname');
     if (path === 'username') return message.replace(/^username\b/i, 'Benutzername');
     if (path === 'password') return message.replace(/^password\b/i, 'Passwort');
     return message;
 };
 
 const mapBackendValidationErrors = (apiError) => {
-    const nextFieldErrors = { username: '', password: '' };
+    const nextFieldErrors = { firstName: '', lastName: '', username: '', password: '' };
 
     if (apiError?.code === 'USER_EXISTS') {
         nextFieldErrors.username = 'Benutzername existiert bereits.';
@@ -54,6 +77,12 @@ const mapBackendValidationErrors = (apiError) => {
 
     const details = Array.isArray(apiError?.details) ? apiError.details : [];
     for (const detail of details) {
+        if (detail?.path === 'firstName' && !nextFieldErrors.firstName) {
+            nextFieldErrors.firstName = toReadableValidationMessage('firstName', detail?.message);
+        }
+        if (detail?.path === 'lastName' && !nextFieldErrors.lastName) {
+            nextFieldErrors.lastName = toReadableValidationMessage('lastName', detail?.message);
+        }
         if (detail?.path === 'username' && !nextFieldErrors.username) {
             nextFieldErrors.username = toReadableValidationMessage('username', detail?.message);
         }
@@ -66,10 +95,11 @@ const mapBackendValidationErrors = (apiError) => {
 };
 
 const register = async () => {
-    message.value = '';
     resetErrors();
 
     const payload = {
+        firstName: firstName.value.trim(),
+        lastName: lastName.value.trim(),
         username: username.value.trim(),
         password: password.value
     };
@@ -83,24 +113,37 @@ const register = async () => {
 
     isSubmitting.value = true;
     try {
-        await authApi.register(payload);
+        const response = await authApi.register(payload);
+        const responseObject = asObject(response);
+        const nestedPayload = asObject(responseObject.data);
+        const resultPayload = Object.keys(nestedPayload).length ? nestedPayload : responseObject;
 
-        message.value = 'Registrierung erfolgreich! Du kannst dich jetzt einloggen.';
+        toast.add({ severity: 'success', summary: 'Registrierung', detail: 'Registrierung erfolgreich', life: 2500 });
+        window.localStorage.setItem(getPendingNameEntryKey(payload.username), '1');
+        emit('register-success', {
+            username: payload.username,
+            token: extractToken(resultPayload) || extractToken(responseObject) || null,
+            roles: resultPayload.roles || resultPayload.role || responseObject.roles || responseObject.role || []
+        });
     } catch (e) {
         const serverFieldErrors = mapBackendValidationErrors(e);
         if (hasFieldErrors(serverFieldErrors)) {
             fieldErrors.value = serverFieldErrors;
             if (e?.code === 'USER_EXISTS') {
-                error.value = 'Bitte waehle einen anderen Benutzernamen.';
+                error.value = '[USER_EXISTS] Bitte waehle einen anderen Benutzernamen.';
             } else if (e?.code === 'VALIDATION_ERROR' || Array.isArray(e?.details)) {
-                error.value = 'Bitte korrigiere die markierten Felder.';
+                error.value = '[VALIDATION_ERROR] Bitte korrigiere die markierten Felder.';
             } else {
-                error.value = getErrorMessage(e, 'Registrierung fehlgeschlagen.');
+                const baseMessage = getErrorMessage(e, 'Registrierung fehlgeschlagen.');
+                error.value = e?.code ? `[${e.code}] ${baseMessage}` : baseMessage;
             }
+            toast.add({ severity: 'error', summary: 'Registrierung', detail: error.value, life: 3500 });
             return;
         }
 
-        error.value = getErrorMessage(e, 'Registrierung fehlgeschlagen.');
+        const baseMessage = getErrorMessage(e, 'Registrierung fehlgeschlagen.');
+        error.value = e?.code ? `[${e.code}] ${baseMessage}` : baseMessage;
+        toast.add({ severity: 'error', summary: 'Registrierung', detail: error.value, life: 3500 });
     } finally {
         isSubmitting.value = false;
     }
@@ -119,10 +162,26 @@ const register = async () => {
         <template #content>
             <div class="p-fluid text-sm flex flex-col gap-2">
                 <IconField>
+                    <InputIcon class="pi pi-id-card" />
+                    <InputText v-model="firstName" placeholder="Vorname" :disabled="isSubmitting" class="w-full p-inputtext-sm" @keyup.enter="register" />
+                </IconField>
+                <small class="text-red-400" v-if="fieldErrors.firstName">{{ fieldErrors.firstName }}</small>
+
+                <IconField>
+                    <InputIcon class="pi pi-id-card" />
+                    <InputText v-model="lastName" placeholder="Nachname" :disabled="isSubmitting" class="w-full p-inputtext-sm" @keyup.enter="register" />
+                </IconField>
+                <small class="text-red-400" v-if="fieldErrors.lastName">{{ fieldErrors.lastName }}</small>
+
+                <IconField>
                     <InputIcon class="pi pi-user-edit" />
                     <InputText v-model="username" placeholder="Benutzername" :disabled="isSubmitting" class="w-full p-inputtext-sm" @keyup.enter="register" />
                 </IconField>
-                <p class="text-xs text-color-secondary">3-40 Zeichen, erlaubt sind a-z, A-Z, 0-9 sowie ., _, -.</p>
+                <div class="rounded-border border border-surface-200 px-3 py-2 text-xs text-color-secondary">
+                    <p>3-24 Zeichen</p>
+                    <p>erlaubt: Buchstaben, Zahlen, Punkt, Unterstrich, Bindestrich</p>
+                    <p>Beispiel: bilal.y</p>
+                </div>
                 <small class="text-red-400" v-if="fieldErrors.username">{{ fieldErrors.username }}</small>
 
                 <IconField>
@@ -135,7 +194,6 @@ const register = async () => {
 
             <Button @click="register" :disabled="isSubmitting" :label="isSubmitting ? 'Bitte warten...' : 'Konto erstellen'" icon="pi pi-user-plus" size="small" class="mt-3 w-full p-button-sm" />
 
-            <Message v-if="message" severity="success" class="mt-3">{{ message }}</Message>
             <Message v-if="error" severity="error" class="mt-3">{{ error }}</Message>
 
             <div class="mt-3 text-sm text-color-secondary">

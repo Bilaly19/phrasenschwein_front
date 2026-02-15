@@ -1,50 +1,44 @@
 import { computed, ref } from 'vue';
+import { normalizeRoles } from '@/utils/authRoles';
 
-const token = ref(localStorage.getItem('token'));
-const username = ref(localStorage.getItem('username'));
-const roles = ref(parseStoredRoles(localStorage.getItem('roles')));
+const TOKEN_STORAGE_KEY = 'token';
+const USERNAME_STORAGE_KEY = 'username';
+const ROLES_STORAGE_KEY = 'roles';
+
+const readStoredToken = () => localStorage.getItem(TOKEN_STORAGE_KEY);
+
+const token = ref(readStoredToken());
+const username = ref(localStorage.getItem(USERNAME_STORAGE_KEY));
+const roles = ref(parseStoredRoles(localStorage.getItem(ROLES_STORAGE_KEY)));
 
 function parseStoredRoles(rawRoles) {
     if (!rawRoles) return [];
 
     try {
         const parsed = JSON.parse(rawRoles);
-        return normalizeRoles(parsed);
+        return normalizeRoles(parsed, { ensureUser: true });
     } catch {
-        return normalizeRoles(rawRoles);
+        return normalizeRoles(rawRoles, { ensureUser: true });
     }
-}
-
-function normalizeRoles(input) {
-    if (Array.isArray(input)) {
-        return [...new Set(input.map((role) => String(role || '').trim()).filter(Boolean))];
-    }
-
-    if (typeof input === 'string') {
-        const trimmed = input.trim();
-        return trimmed ? [trimmed] : [];
-    }
-
-    return [];
 }
 
 const persistAuth = () => {
     if (token.value) {
-        localStorage.setItem('token', token.value);
+        localStorage.setItem(TOKEN_STORAGE_KEY, token.value);
     } else {
-        localStorage.removeItem('token');
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
     }
 
     if (username.value) {
-        localStorage.setItem('username', username.value);
+        localStorage.setItem(USERNAME_STORAGE_KEY, username.value);
     } else {
-        localStorage.removeItem('username');
+        localStorage.removeItem(USERNAME_STORAGE_KEY);
     }
 
     if (roles.value.length) {
-        localStorage.setItem('roles', JSON.stringify(roles.value));
+        localStorage.setItem(ROLES_STORAGE_KEY, JSON.stringify(roles.value));
     } else {
-        localStorage.removeItem('roles');
+        localStorage.removeItem(ROLES_STORAGE_KEY);
     }
 };
 
@@ -55,7 +49,7 @@ export const useAuth = () => {
     const login = (nextToken, nextUsername, nextRoles = []) => {
         token.value = nextToken;
         username.value = nextUsername || null;
-        roles.value = normalizeRoles(nextRoles);
+        roles.value = normalizeRoles(nextRoles, { ensureUser: true });
         persistAuth();
     };
 
@@ -79,5 +73,4 @@ export const useAuth = () => {
     };
 };
 
-export const getAuthToken = () => token.value;
-
+export const getAuthToken = () => token.value || readStoredToken();

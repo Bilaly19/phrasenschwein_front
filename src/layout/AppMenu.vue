@@ -1,83 +1,33 @@
 <script setup>
-import { useAuth } from '@/stores/auth';
-import { computed } from 'vue';
 import AppMenuItem from './AppMenuItem.vue';
 
-const { roles } = useAuth();
-const isAdmin = computed(() => roles.value.includes('admin'));
-
-const model = computed(() => [
+const model = [
     {
-        label: 'Navigation',
-        items: [
-            {
-                label: 'Phrasenschwein',
-                icon: 'pi pi-fw pi-wallet',
-                to: '/phrasenschwein'
-            },
-            {
-                label: 'Dashboard',
-                icon: 'pi pi-fw pi-home',
-                to: '/dashboard'
-            },
-            {
-                label: 'Admin',
-                icon: 'pi pi-fw pi-shield',
-                to: '/admin',
-                visible: isAdmin.value
-            }
-        ]
+        label: 'Phrasenschwein',
+        icon: 'pi pi-fw pi-wallet',
+        to: '/phrasenschwein'
     },
     {
-        label: 'Pages',
-        icon: 'pi pi-fw pi-briefcase',
-        path: '/pages',
-        items: [
-            {
-                label: 'Landing',
-                icon: 'pi pi-fw pi-globe',
-                to: '/landing'
-            },
-            {
-                label: 'Crud',
-                icon: 'pi pi-fw pi-pencil',
-                to: '/pages/crud'
-            },
-            {
-                label: 'Not Found',
-                icon: 'pi pi-fw pi-exclamation-circle',
-                to: '/pages/notfound'
-            },
-            {
-                label: 'Empty',
-                icon: 'pi pi-fw pi-circle-off',
-                to: '/pages/empty'
-            }
-        ]
+        label: 'Dashboard',
+        icon: 'pi pi-fw pi-home',
+        to: '/dashboard'
     },
     {
-        label: 'Get Started',
-        path: '/start',
-        items: [
-            {
-                label: 'Documentation',
-                icon: 'pi pi-fw pi-book',
-                to: '/start/documentation'
-            },
-            {
-                label: 'View Source',
-                icon: 'pi pi-fw pi-github',
-                url: 'https://github.com/primefaces/sakai-vue',
-                target: '_blank'
-            }
-        ]
+        label: 'Einstellungen',
+        icon: 'pi pi-fw pi-cog',
+        to: '/einstellungen'
+    },
+    {
+        label: 'Statistik',
+        icon: 'pi pi-fw pi-chart-line',
+        to: '/statistik'
     }
-]);
+];
 </script>
 
 <template>
     <ul class="layout-menu">
-        <template v-for="(item, i) in model" :key="item">
+        <template v-for="(item, i) in model" :key="item.to">
             <app-menu-item v-if="!item.separator" :item="item" :index="i"></app-menu-item>
             <li v-if="item.separator" class="menu-separator"></li>
         </template>
