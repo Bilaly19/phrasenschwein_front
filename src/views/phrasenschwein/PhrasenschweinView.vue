@@ -337,7 +337,7 @@ watch(infoMessage, (message) => {
 </script>
 
 <template>
-    <div class="px-3 py-3 md:px-4">
+    <div class="p-2">
         <Toast position="top-right" />
         <ConfirmDialog />
 
@@ -346,106 +346,92 @@ watch(infoMessage, (message) => {
                 <template #title>
                     <div class="min-w-0">
                         <h1 class="text-xl font-semibold leading-tight">Phrasenschwein</h1>
-                        <p class="text-sm text-color-secondary mt-1">Verwalte Klicks, Namen und den Wert pro Klick.</p>
+                        <p class="mt-1 text-sm text-color-secondary">Verwalte Klicks, Namen und den Wert pro Klick.</p>
                     </div>
                 </template>
                 <template #actions>
-                    <Tag :value="username" severity="info" class="text-xs" />
-                    <Button v-if="paypalUrl" as="a" :href="paypalUrl" target="_blank" rel="noopener noreferrer" icon="pi pi-heart" label="Spenden" severity="secondary" size="small" class="p-button-sm" title="Unterstuetze das Phrasenschwein" />
-                    <Button icon="pi pi-sign-out" label="Logout" severity="secondary" size="small" class="p-button-sm" :disabled="loading.logout" @click="handleLogout" />
+                    <Tag :value="username" severity="info" class="text-xs w-fit" />
+                    <Button
+                        v-if="paypalUrl"
+                        as="a"
+                        :href="paypalUrl"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        icon="pi pi-heart"
+                        label="Spenden"
+                        severity="secondary"
+                        size="small"
+                        class="p-button-sm w-full sm:w-auto"
+                        title="Unterstuetze das Phrasenschwein"
+                    />
+                    <Button icon="pi pi-sign-out" label="Logout" severity="secondary" size="small" class="p-button-sm w-full sm:w-auto" :disabled="loading.logout" @click="handleLogout" />
                 </template>
 
-                <div class="flex flex-col gap-3 mt-1">
-                    <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-                        <Card>
-                            <template #content>
-                                <p class="text-xs text-color-secondary mb-1">Namen</p>
-                                <p class="text-lg font-semibold">{{ namesCount }}</p>
-                            </template>
-                        </Card>
-                        <Card>
-                            <template #content>
-                                <p class="text-xs text-color-secondary mb-1">Klicks gesamt</p>
-                                <p class="text-lg font-semibold">{{ totalClicks }}</p>
-                            </template>
-                        </Card>
-                        <Card>
-                            <template #content>
-                                <p class="text-xs text-color-secondary mb-1">Wert pro Klick</p>
-                                <p class="text-lg font-semibold">{{ totalAmount }} EUR</p>
-                            </template>
-                        </Card>
-                    </div>
-
-                    <Card>
-                        <template #title>
-                            <div class="text-base font-semibold">Steuerung</div>
-                        </template>
-                        <template #subtitle>
-                            <p class="text-sm text-color-secondary">Konfiguration und Eingaben an einem Ort.</p>
-                        </template>
-                        <template #content>
-                            <div class="p-fluid flex flex-col gap-3">
-                                <Message v-if="errorMessage" severity="error" size="small">{{ errorMessage }}</Message>
-                                <Message v-if="infoMessage" severity="success" size="small">{{ infoMessage }}</Message>
-
-                                <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                    <div>
-                                        <h2 class="text-sm font-medium mb-2">Wert pro Klick</h2>
-                                        <ClickValueInput v-model="valuePerClick" :disabled="loading.saveConfig" />
-                                    </div>
-                                    <div>
-                                        <h2 class="text-sm font-medium mb-2">Name hinzufuegen</h2>
-                                        <AddNameForm @add="addName" :disabled="loading.add || loading.fetchNames" />
-                                    </div>
-                                </div>
-
-                                <Divider />
-                                <div>
-                                    <Button @click="requestResetAll" :disabled="loading.reset || loading.fetchNames" icon="pi pi-refresh" label="Alle Zaehler zuruecksetzen" severity="secondary" size="small" class="p-button-sm" />
-                                </div>
-                            </div>
-                        </template>
-                    </Card>
-
-                    <Card>
-                        <template #title>
-                            <div class="text-base font-semibold">Namenliste</div>
-                        </template>
-                        <template #subtitle>
-                            <p class="text-sm text-color-secondary">Klicks je Person erfassen und verwalten.</p>
-                        </template>
-                        <template #content>
-                            <div v-if="hasNames" class="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                <NameEntry
-                                    v-for="entry in nameEntries"
-                                    :key="entry.name"
-                                    :name="entry.name"
-                                    :data="entry.data"
-                                    :valuePerClick="safeValuePerClick"
-                                    :disabledIncrement="isNamePending(entry.name)"
-                                    :disabledDelete="isNamePending(entry.name)"
-                                    @increment="increment"
-                                    @delete="requestDeleteName"
-                                />
-                            </div>
-                            <div v-else class="flex flex-col items-center justify-center rounded-border border border-dashed border-surface-300 px-4 py-6 text-center">
-                                <i class="pi pi-users text-3xl text-color-secondary mb-2"></i>
-                                <p class="font-medium">Noch keine Namen vorhanden</p>
-                                <p class="text-sm text-color-secondary mt-1">Fuege oben den ersten Namen hinzu.</p>
-                                <div class="mt-3">
-                                    <Tag value="Leer" severity="secondary" />
-                                </div>
-                            </div>
-                        </template>
-                    </Card>
+                <div class="mb-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <Panel header="Namen">
+                        <p class="text-lg font-semibold">{{ namesCount }}</p>
+                    </Panel>
+                    <Panel header="Klicks gesamt">
+                        <p class="text-lg font-semibold">{{ totalClicks }}</p>
+                    </Panel>
+                    <Panel header="Wert gesamt">
+                        <p class="text-lg font-semibold">{{ totalAmount }} EUR</p>
+                    </Panel>
                 </div>
+
+                <Panel header="Konfiguration" class="mb-3">
+                    <p class="mb-3 text-sm text-color-secondary">Konfiguration und Eingaben an einem Ort.</p>
+                    <div class="p-fluid">
+                        <Message v-if="errorMessage" severity="error" size="small" class="mb-3">{{ errorMessage }}</Message>
+                        <Message v-if="infoMessage" severity="success" size="small" class="mb-3">{{ infoMessage }}</Message>
+
+                        <div class="mb-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+                            <div>
+                                <h3 class="mb-3 text-sm font-medium">Wert pro Klick</h3>
+                                <ClickValueInput v-model="valuePerClick" :disabled="loading.saveConfig" />
+                            </div>
+                            <div>
+                                <h3 class="mb-3 text-sm font-medium">Name hinzufuegen</h3>
+                                <AddNameForm @add="addName" :disabled="loading.add || loading.fetchNames" />
+                            </div>
+                        </div>
+
+                        <Button @click="requestResetAll" :disabled="loading.reset || loading.fetchNames" icon="pi pi-refresh" label="Alle Zaehler zuruecksetzen" severity="secondary" size="small" class="p-button-sm" />
+                    </div>
+                </Panel>
+
+                <Panel header="Namensliste">
+                    <p class="mb-3 text-sm text-color-secondary">Klicks je Person erfassen und verwalten.</p>
+                    <div v-if="hasNames" class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <NameEntry
+                            v-for="entry in nameEntries"
+                            :key="entry.name"
+                            :name="entry.name"
+                            :data="entry.data"
+                            :valuePerClick="safeValuePerClick"
+                            :disabledIncrement="isNamePending(entry.name)"
+                            :disabledDelete="isNamePending(entry.name)"
+                            @increment="increment"
+                            @delete="requestDeleteName"
+                        />
+                    </div>
+                    <div v-else class="flex flex-col items-center justify-center rounded-border border border-dashed border-surface-300 px-4 py-6 text-center">
+                        <i class="pi pi-users mb-2 text-3xl text-color-secondary"></i>
+                        <p class="font-medium">Noch keine Namen vorhanden</p>
+                        <p class="mt-1 text-sm text-color-secondary">Fuege oben den ersten Namen hinzu.</p>
+                        <div class="mt-3">
+                            <Tag value="Leer" severity="secondary" />
+                        </div>
+                    </div>
+                </Panel>
             </AppShell>
         </div>
 
-        <div v-else-if="authInitialized" class="mx-auto w-full max-w-sm text-sm">
-            <LoginForm v-if="showLogin" @login-success="onLogin" @switch="showLogin = false" />
-            <RegisterForm v-else @switch="showLogin = true" />
+        <div v-else-if="authInitialized" class="mx-auto w-full max-w-4xl p-2 text-sm">
+            <div class="mx-auto w-full max-w-sm">
+                <LoginForm v-if="showLogin" @login-success="onLogin" @switch="showLogin = false" />
+                <RegisterForm v-else @switch="showLogin = true" />
+            </div>
         </div>
     </div>
 </template>

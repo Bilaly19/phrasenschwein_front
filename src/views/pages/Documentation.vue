@@ -123,7 +123,7 @@ import AppLayout from './AppLayout.vue';
             <li><span class="text-primary font-medium">public/demo</span> <i class="pi pi-arrow-right text-sm! mr-1"></i> <span class="text-primary font-medium">public</span></li>
             <li><span class="text-primary font-medium">src/components</span> <i class="pi pi-arrow-right text-sm! mr-1"></i> <span class="text-primary font-medium">components</span></li>
             <li><span class="text-primary font-medium">src/service</span> <i class="pi pi-arrow-right text-sm! mr-1"></i> <span class="text-primary font-medium">service</span></li>
-            <li><span class="text-primary font-medium">src/views/uikit</span> <i class="pi pi-arrow-right text-sm! mr-1"></i> <span class="text-primary font-medium">pages/uikit</span></li>
+            <li><span class="text-primary font-medium">src/views/phrasenschwein</span> <i class="pi pi-arrow-right text-sm! mr-1"></i> <span class="text-primary font-medium">pages/phrasenschwein</span></li>
             <li><span class="text-primary font-medium">src/views/pages</span> <i class="pi pi-arrow-right text-sm! mr-1"></i> <span class="text-primary font-medium">pages</span></li>
         </ul>
     </div>

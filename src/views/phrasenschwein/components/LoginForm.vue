@@ -58,8 +58,14 @@ const login = async () => {
         </template>
         <template #content>
             <div class="p-fluid text-sm flex flex-col gap-2">
-                <InputText v-model="localUsername" placeholder="Benutzername eingeben" :disabled="isSubmitting" class="w-full p-inputtext-sm" @keyup.enter="login" />
-                <Password v-model="password" placeholder="Passwort eingeben" :disabled="isSubmitting" :feedback="false" toggleMask inputClass="w-full p-inputtext-sm" class="w-full" @keyup.enter="login" />
+                <IconField>
+                    <InputIcon class="pi pi-user" />
+                    <InputText v-model="localUsername" placeholder="Benutzername" :disabled="isSubmitting" class="w-full p-inputtext-sm" @keyup.enter="login" />
+                </IconField>
+                <IconField>
+                    <InputIcon class="pi pi-lock" />
+                    <Password v-model="password" placeholder="Passwort" :disabled="isSubmitting" :feedback="false" toggleMask inputClass="w-full p-inputtext-sm" class="w-full" @keyup.enter="login" />
+                </IconField>
             </div>
             <Button @click="login" :disabled="isSubmitting" :label="isSubmitting ? 'Bitte warten...' : 'Einloggen'" icon="pi pi-sign-in" size="small" class="mt-3 w-full p-button-sm" />
             <Message v-if="error" severity="error" class="mt-3">{{ error }}</Message>

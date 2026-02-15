@@ -1,8 +1,10 @@
 <script setup>
 import { useLayout } from '@/layout/composables/layout';
 import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 
 const { layoutState, isDesktop } = useLayout();
+const route = useRoute();
 
 const props = defineProps({
     item: {
@@ -22,7 +24,13 @@ const props = defineProps({
 const fullPath = computed(() => (props.item.path ? (props.parentPath ? props.parentPath + props.item.path : props.item.path) : null));
 
 const isActive = computed(() => {
-    return props.item.path ? layoutState.activePath?.startsWith(fullPath.value) : layoutState.activePath === props.item.to;
+    if (props.item.path && fullPath.value) {
+        return layoutState.activePath?.startsWith(fullPath.value) || route.path.startsWith(fullPath.value);
+    }
+    if (props.item.to) {
+        return layoutState.activePath === props.item.to || route.path === props.item.to;
+    }
+    return false;
 });
 
 const itemClick = (event, item) => {

@@ -27,16 +27,14 @@ const blockView = ref(0);
 const codeCopied = ref(false);
 const codeCopyLoading = ref(false);
 
-function activateView(event, blockViewValue) {
+function activateView(blockViewValue) {
     blockView.value = blockViewValue;
-    event.preventDefault();
 }
 
-async function copyCode(event) {
+async function copyCode() {
     if (codeCopied.value || codeCopyLoading.value) return;
 
     codeCopyLoading.value = true;
-    event.preventDefault();
 
     try {
         await navigator.clipboard.writeText(props.code);
@@ -62,24 +60,22 @@ async function copyCode(event) {
             <div class="flex items-center gap-2">
                 <!-- Preview/Code Toggle -->
                 <div class="inline-flex border border-surface-200 dark:border-surface-700 rounded-2xl overflow-hidden min-h-10">
-                    <button
-                        :class="[
-                            'min-w-28 flex items-center gap-1 justify-center px-4 py-2 rounded-2xl transition-all duration-200 font-medium cursor-pointer   ',
-                            blockView === BlockView.CODE ? 'bg-primary text-primary-contrast ' : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-0'
-                        ]"
-                        @click="activateView($event, BlockView.CODE)"
-                    >
-                        <span>Code</span>
-                    </button>
-                    <button
-                        :class="[
-                            'min-w-28 flex items-center gap-1 justify-center px-4 py-2 rounded-2xl transition-all duration-200 font-medium cursor-pointer',
-                            blockView === BlockView.PREVIEW ? 'bg-primary text-primary-contrast   ' : 'text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-0'
-                        ]"
-                        @click="activateView($event, BlockView.PREVIEW)"
-                    >
-                        <span>Preview</span>
-                    </button>
+                    <Button
+                        label="Code"
+                        size="small"
+                        class="p-button-sm !rounded-none !border-0 !min-w-28"
+                        :severity="blockView === BlockView.CODE ? 'primary' : 'secondary'"
+                        :outlined="blockView !== BlockView.CODE"
+                        @click="activateView(BlockView.CODE)"
+                    />
+                    <Button
+                        label="Preview"
+                        size="small"
+                        class="p-button-sm !rounded-none !border-0 !min-w-28"
+                        :severity="blockView === BlockView.PREVIEW ? 'primary' : 'secondary'"
+                        :outlined="blockView !== BlockView.PREVIEW"
+                        @click="activateView(BlockView.PREVIEW)"
+                    />
                 </div>
 
                 <!-- Separator -->
@@ -87,37 +83,7 @@ async function copyCode(event) {
 
                 <!-- Animated Copy Button -->
                 <div class="flex items-center gap-2 grow lg:grow-0 justify-end lg:justify-start">
-                    <button
-                        @click="copyCode($event)"
-                        :disabled="codeCopyLoading"
-                        class="relative w-10 h-10 border border-surface-200 dark:border-surface-700 rounded-full hover:bg-surface-100 dark:hover:bg-surface-800 transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0 dark:focus-visible:ring-offset-surface-900 cursor-pointer disabled:cursor-wait"
-                    >
-                        <!-- Loading Spinner -->
-                        <span :class="['absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-300 leading-none', codeCopyLoading ? 'opacity-100 scale-100 z-10' : 'opacity-0 scale-50 -z-[2]']">
-                            <i class="pi pi-spinner animate-spin text-surface-700 dark:text-surface-300" style="font-size: 1.25rem"></i>
-                        </span>
-
-                        <!-- Checkmark Icon -->
-                        <span :class="['absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-300 leading-none', codeCopied && !codeCopyLoading ? 'opacity-100 scale-100 z-10' : 'opacity-0 scale-50 -z-[2]']">
-                            <svg class="w-5 h-5 fill-green-600 dark:fill-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                                <g id="check">
-                                    <path d="M9,18.25A.74.74,0,0,1,8.47,18l-5-5A.75.75,0,1,1,4.53,12L9,16.44,19.47,6A.75.75,0,0,1,20.53,7l-11,11A.74.74,0,0,1,9,18.25Z"></path>
-                                </g>
-                            </svg>
-                        </span>
-
-                        <!-- Copy Icon -->
-                        <span :class="['absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-300 leading-none', !codeCopied && !codeCopyLoading ? 'opacity-100 scale-100 z-10' : 'opacity-0 scale-50 -z-[2]']">
-                            <svg class="w-5 h-5 fill-surface-700 dark:fill-surface-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                                <g id="clone">
-                                    <path
-                                        d="M14,16.75H6A2.75,2.75,0,0,1,3.25,14V6A2.75,2.75,0,0,1,6,3.25h8A2.75,2.75,0,0,1,16.75,6v8A2.75,2.75,0,0,1,14,16.75Zm-8-12A1.25,1.25,0,0,0,4.75,6v8A1.25,1.25,0,0,0,6,15.25h8A1.25,1.25,0,0,0,15.25,14V6A1.25,1.25,0,0,0,14,4.75Z"
-                                    ></path>
-                                    <path d="M18,20.75H10A2.75,2.75,0,0,1,7.25,18V16h1.5v2A1.25,1.25,0,0,0,10,19.25h8A1.25,1.25,0,0,0,19.25,18V10A1.25,1.25,0,0,0,18,8.75H16V7.25h2A2.75,2.75,0,0,1,20.75,10v8A2.75,2.75,0,0,1,18,20.75Z"></path>
-                                </g>
-                            </svg>
-                        </span>
-                    </button>
+                    <Button @click="copyCode" :disabled="codeCopyLoading" rounded text :loading="codeCopyLoading" :icon="codeCopied ? 'pi pi-check' : 'pi pi-copy'" class="!w-10 !h-10" aria-label="Code kopieren" />
                 </div>
             </div>
         </div>

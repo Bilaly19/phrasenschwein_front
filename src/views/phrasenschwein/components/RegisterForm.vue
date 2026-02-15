@@ -118,11 +118,17 @@ const register = async () => {
         </template>
         <template #content>
             <div class="p-fluid text-sm flex flex-col gap-2">
-                <InputText v-model="username" placeholder="Benutzername eingeben" :disabled="isSubmitting" class="w-full p-inputtext-sm" @keyup.enter="register" />
+                <IconField>
+                    <InputIcon class="pi pi-user-edit" />
+                    <InputText v-model="username" placeholder="Benutzername" :disabled="isSubmitting" class="w-full p-inputtext-sm" @keyup.enter="register" />
+                </IconField>
                 <p class="text-xs text-color-secondary">3-40 Zeichen, erlaubt sind a-z, A-Z, 0-9 sowie ., _, -.</p>
                 <small class="text-red-400" v-if="fieldErrors.username">{{ fieldErrors.username }}</small>
 
-                <Password v-model="password" placeholder="Passwort eingeben" :disabled="isSubmitting" :feedback="false" toggleMask inputClass="w-full p-inputtext-sm" class="w-full" @keyup.enter="register" />
+                <IconField>
+                    <InputIcon class="pi pi-key" />
+                    <Password v-model="password" placeholder="Passwort" :disabled="isSubmitting" :feedback="false" toggleMask inputClass="w-full p-inputtext-sm" class="w-full" @keyup.enter="register" />
+                </IconField>
                 <p class="text-xs text-color-secondary">8-200 Zeichen.</p>
                 <small class="text-red-400" v-if="fieldErrors.password">{{ fieldErrors.password }}</small>
             </div>

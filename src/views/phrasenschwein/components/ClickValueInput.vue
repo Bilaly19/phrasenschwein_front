@@ -24,17 +24,20 @@ const onInput = (nextValue) => {
 <template>
     <div class="p-fluid flex flex-col gap-2">
         <label for="clickValue" class="text-sm font-medium">Wert pro Klick (EUR)</label>
-        <InputNumber
-            id="clickValue"
-            :modelValue="displayValue"
-            :disabled="disabled"
-            :minFractionDigits="2"
-            :maxFractionDigits="2"
-            :useGrouping="false"
-            placeholder="z. B. 0.50"
-            inputClass="w-full p-inputtext-sm"
-            class="w-full"
-            @update:modelValue="onInput"
-        />
+        <IconField>
+            <InputIcon class="pi pi-euro" />
+            <InputNumber
+                id="clickValue"
+                :modelValue="displayValue"
+                :disabled="disabled"
+                :minFractionDigits="2"
+                :maxFractionDigits="2"
+                :useGrouping="false"
+                placeholder="z. B. 0.50"
+                inputClass="w-full p-inputtext-sm"
+                class="w-full"
+                @update:modelValue="onInput"
+            />
+        </IconField>
     </div>
 </template>

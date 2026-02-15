@@ -4,7 +4,7 @@
             <div class="flex items-center gap-2 min-w-0">
                 <slot name="title" />
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                 <slot name="actions" />
             </div>
         </header>

@@ -8,9 +8,7 @@ const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
 <template>
     <div class="layout-topbar app-topbar-compact">
         <div class="layout-topbar-logo-container">
-            <button class="layout-menu-button layout-topbar-action" @click="toggleMenu">
-                <i class="pi pi-bars"></i>
-            </button>
+            <Button class="layout-menu-button layout-topbar-action" text rounded icon="pi pi-bars" aria-label="Menue oeffnen" @click="toggleMenu" />
             <router-link to="/" class="layout-topbar-logo">
                 <svg viewBox="0 0 54 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -36,42 +34,34 @@ const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
 
         <div class="layout-topbar-actions">
             <div class="layout-config-menu">
-                <button type="button" class="layout-topbar-action" @click="toggleDarkMode">
-                    <i :class="['pi', { 'pi-moon': isDarkTheme, 'pi-sun': !isDarkTheme }]"></i>
-                </button>
+                <Button text rounded class="layout-topbar-action" :icon="isDarkTheme ? 'pi pi-moon' : 'pi pi-sun'" aria-label="Theme wechseln" @click="toggleDarkMode" />
                 <div class="relative">
-                    <button
+                    <Button
                         v-styleclass="{ selector: '@next', enterFromClass: 'hidden', enterActiveClass: 'p-anchored-overlay-enter-active', leaveToClass: 'hidden', leaveActiveClass: 'p-anchored-overlay-leave-active', hideOnOutsideClick: true }"
-                        type="button"
+                        text
+                        rounded
+                        icon="pi pi-palette"
+                        aria-label="Konfiguration anzeigen"
                         class="layout-topbar-action layout-topbar-action-highlight"
-                    >
-                        <i class="pi pi-palette"></i>
-                    </button>
+                    />
                     <AppConfigurator />
                 </div>
             </div>
 
-            <button
+            <Button
                 class="layout-topbar-menu-button layout-topbar-action"
                 v-styleclass="{ selector: '@next', enterFromClass: 'hidden', enterActiveClass: 'p-anchored-overlay-enter-active', leaveToClass: 'hidden', leaveActiveClass: 'p-anchored-overlay-leave-active', hideOnOutsideClick: true }"
-            >
-                <i class="pi pi-ellipsis-v"></i>
-            </button>
+                text
+                rounded
+                icon="pi pi-ellipsis-v"
+                aria-label="Topbar-Menue"
+            />
 
             <div class="layout-topbar-menu hidden lg:block">
                 <div class="layout-topbar-menu-content">
-                    <button type="button" class="layout-topbar-action">
-                        <i class="pi pi-calendar"></i>
-                        <span>Calendar</span>
-                    </button>
-                    <button type="button" class="layout-topbar-action">
-                        <i class="pi pi-inbox"></i>
-                        <span>Messages</span>
-                    </button>
-                    <button type="button" class="layout-topbar-action">
-                        <i class="pi pi-user"></i>
-                        <span>Profile</span>
-                    </button>
+                    <Button text class="layout-topbar-action" icon="pi pi-calendar" label="Calendar" />
+                    <Button text class="layout-topbar-action" icon="pi pi-inbox" label="Messages" />
+                    <Button text class="layout-topbar-action" icon="pi pi-user" label="Profile" />
                 </div>
             </div>
         </div>
