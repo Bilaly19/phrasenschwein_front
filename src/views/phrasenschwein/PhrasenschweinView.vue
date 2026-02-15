@@ -11,7 +11,7 @@ import RegisterForm from './components/RegisterForm.vue';
 import { authApi, clearAuthorizationToken, getErrorMessage, namesApi } from '@/api';
 import { useAuth } from '@/stores/auth';
 
-const { token, username, isAuthenticated, login: setAuthState, clearAuthState } = useAuth();
+const { token, username, isAuthenticated, login: setAuthState, reset: resetAuth } = useAuth();
 const toast = useToast();
 const confirm = useConfirm();
 
@@ -222,7 +222,7 @@ const handleLogout = async () => {
         errorMessage.value = getErrorMessage(error, 'Logout konnte nicht vollstaendig abgeschlossen werden.');
     } finally {
         clearAuthorizationToken();
-        clearAuthState();
+        resetAuth();
         names.value = {};
         showLogin.value = true;
         authDebug('[auth] logout state reset');
@@ -238,7 +238,7 @@ const onLogin = async () => {
 
 const onUnauthorized = (event) => {
     clearAuthorizationToken();
-    clearAuthState();
+    resetAuth();
     names.value = {};
     showLogin.value = true;
     infoMessage.value = event.detail || 'Bitte erneut einloggen.';
@@ -251,7 +251,7 @@ const initializeAuth = async () => {
     if (disableAutoLogin) {
         authDebug('[auth] auto-login disabled via VITE_DISABLE_AUTOLOGIN');
         clearAuthorizationToken();
-        clearAuthState();
+        resetAuth();
         names.value = {};
         showLogin.value = true;
         authInitialized.value = true;
@@ -260,7 +260,7 @@ const initializeAuth = async () => {
 
     if (!storedToken) {
         clearAuthorizationToken();
-        clearAuthState();
+        resetAuth();
         names.value = {};
         showLogin.value = true;
         authInitialized.value = true;
@@ -276,7 +276,7 @@ const initializeAuth = async () => {
         await Promise.all([fetchNames(), loadConfig()]);
     } catch (error) {
         clearAuthorizationToken();
-        clearAuthState();
+        resetAuth();
         names.value = {};
         showLogin.value = true;
         authDebug('[auth] session validation result: invalid', error?.status ?? error);
@@ -435,3 +435,4 @@ watch(infoMessage, (message) => {
         </div>
     </div>
 </template>
+

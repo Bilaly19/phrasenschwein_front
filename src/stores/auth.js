@@ -38,8 +38,10 @@ export const useAuth = () => {
         isAuthenticated,
         login,
         logout: clearAuthState,
+        reset: clearAuthState,
         clearAuthState
     };
 };
 
 export const getAuthToken = () => token.value;
+

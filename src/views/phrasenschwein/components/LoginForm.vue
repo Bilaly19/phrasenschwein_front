@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { authApi, getErrorMessage } from '@/api';
+import { authApi, clearAuthorizationToken, getErrorMessage } from '@/api';
 import { useAuth } from '@/stores/auth';
 
 const emit = defineEmits(['login-success', 'switch']);
@@ -8,7 +8,7 @@ const localUsername = ref('');
 const password = ref('');
 const error = ref('');
 const isSubmitting = ref(false);
-const { login: loginAuth, clearAuthState } = useAuth();
+const { login: loginAuth, reset: resetAuth } = useAuth();
 const authDebug = (...args) => {
     if (import.meta.env.DEV) {
         console.debug(...args);
@@ -31,10 +31,22 @@ const login = async () => {
             password: password.value
         });
 
-        loginAuth(res.token, res.username);
+        let resolvedUsername = res.username || normalizedUsername;
+
+        try {
+            const session = await authApi.getSession();
+            if (session?.username) {
+                resolvedUsername = session.username;
+            }
+        } catch (sessionError) {
+            authDebug('[auth] login session sync failed:', sessionError?.status ?? sessionError);
+        }
+
+        loginAuth(res.token, resolvedUsername);
         emit('login-success');
     } catch (e) {
-        clearAuthState();
+        clearAuthorizationToken();
+        resetAuth();
         authDebug('[auth] login error status/code:', e?.status ?? 'n/a', e?.code ?? 'n/a');
         if (e?.status === 401 && e?.code === 'LOGIN_FAILED') {
             error.value = 'Benutzername oder Passwort ist falsch.';
@@ -76,3 +88,4 @@ const login = async () => {
         </template>
     </Card>
 </template>
+

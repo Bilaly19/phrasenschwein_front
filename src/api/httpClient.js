@@ -49,9 +49,9 @@ httpClient.interceptors.response.use(
         const requestUrl = error?.config?.url || '';
 
         if (shouldHandleAsAuthFailure(normalizedError.status, requestUrl)) {
-            const { clearAuthState } = useAuth();
+            const { reset } = useAuth();
             clearAuthorizationToken();
-            clearAuthState();
+            reset();
             normalizedError.userMessage = 'Deine Sitzung ist abgelaufen. Bitte logge dich erneut ein.';
             window.dispatchEvent(new CustomEvent('auth:unauthorized', { detail: normalizedError.userMessage }));
         }
@@ -63,3 +63,4 @@ httpClient.interceptors.response.use(
         return Promise.reject(normalizedError);
     }
 );
+

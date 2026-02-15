@@ -3,6 +3,9 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 const router = createRouter({
     history: createWebHistory(),
+    scrollBehavior() {
+        return { top: 0 };
+    },
     routes: [
         {
             path: '/',
@@ -31,13 +34,13 @@ const router = createRouter({
                     path: '/start/documentation',
                     name: 'documentation',
                     component: () => import('@/views/pages/Documentation.vue')
-                },
-                {
-                    path: '/phrasenschwein',
-                    name: 'phrasenschwein',
-                    component: () => import('@/views/phrasenschwein/PhrasenschweinView.vue')
                 }
             ]
+        },
+        {
+            path: '/phrasenschwein',
+            name: 'phrasenschwein',
+            component: () => import('@/views/phrasenschwein/PhrasenschweinView.vue')
         },
         {
             path: '/landing',
