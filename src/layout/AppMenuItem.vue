@@ -76,3 +76,13 @@ const onMouseEnter = () => {
         </Transition>
     </li>
 </template>
+
+<style scoped>
+.active-route,
+.active-menuitem > a,
+.active-menuitem > .active-route {
+    border-radius: var(--content-border-radius);
+    background: color-mix(in srgb, var(--p-primary-color) 14%, transparent);
+    color: var(--p-primary-color);
+}
+</style>

@@ -6,7 +6,7 @@ const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
 </script>
 
 <template>
-    <div class="layout-topbar">
+    <div class="layout-topbar app-topbar-compact">
         <div class="layout-topbar-logo-container">
             <button class="layout-menu-button layout-topbar-action" @click="toggleMenu">
                 <i class="pi pi-bars"></i>
@@ -77,3 +77,14 @@ const { toggleMenu, toggleDarkMode, isDarkTheme } = useLayout();
         </div>
     </div>
 </template>
+
+<style scoped>
+.app-topbar-compact {
+    min-height: 56px;
+}
+
+.app-topbar-compact :deep(.layout-topbar-action) {
+    width: 2.25rem;
+    height: 2.25rem;
+}
+</style>
