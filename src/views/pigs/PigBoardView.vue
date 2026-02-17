@@ -407,7 +407,7 @@ watch(infoMessage, (message) => {
 
                 <Panel header="Mein Eintrag" class="mb-3">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="text-sm text-color-secondary">Du kannst nur deinen eigenen Namen inkrementieren/loeschen.</div>
+                        <div class="text-sm text-color-secondary">Du kannst nur deinen eigenen Namen inkrementieren.</div>
                         <div class="flex gap-2">
                             <Button
                                 icon="pi pi-refresh"
@@ -435,9 +435,7 @@ watch(infoMessage, (message) => {
                             :data="entry.data"
                             :valuePerClick="safeValuePerClick"
                             :canIncrement="isOwnEntry(entry.name)"
-                            :canDelete="isOwnEntry(entry.name)"
                             :disabledIncrement="isNamePending(entry.name) || !isOwnEntry(entry.name)"
-                            :disabledDelete="isNamePending(entry.name) || !isOwnEntry(entry.name)"
                             @increment="increment"
                         />
                     </div>
@@ -453,6 +451,7 @@ watch(infoMessage, (message) => {
         <div v-else class="text-center text-color-secondary">Initialisiere...</div>
     </div>
 </template>
+
 
 
 

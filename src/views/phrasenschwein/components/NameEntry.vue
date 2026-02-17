@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -9,21 +9,13 @@ const props = defineProps({
         type: Boolean,
         default: false
     },
-    disabledDelete: {
-        type: Boolean,
-        default: false
-    },
     canIncrement: {
-        type: Boolean,
-        default: true
-    },
-    canDelete: {
         type: Boolean,
         default: true
     }
 });
 
-defineEmits(['increment', 'delete']);
+defineEmits(['increment']);
 
 const formatDate = (dateStr) => {
     const date = new Date(dateStr);
@@ -51,8 +43,7 @@ const euroBetrag = computed(() => {
             </div>
             <div class="flex gap-2 mt-3">
                 <Button v-if="canIncrement" :disabled="disabledIncrement" label="+1" icon="pi pi-plus" severity="primary" size="small" class="p-button-sm" @click="$emit('increment', name)" />
-                <Button v-if="canDelete" :disabled="disabledDelete" label="Loeschen" icon="pi pi-trash" severity="danger" outlined size="small" class="p-button-sm" @click="$emit('delete', name)" />
-                <Tag v-if="!canIncrement && !canDelete" severity="secondary" icon="pi pi-lock" value="Nur lesen" />
+                <Tag v-else severity="secondary" icon="pi pi-lock" value="Nur lesen" />
             </div>
         </template>
     </Card>
