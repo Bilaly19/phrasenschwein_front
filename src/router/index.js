@@ -1,4 +1,4 @@
-import AppLayout from '@/layout/AppLayout.vue';
+﻿import AppLayout from '@/layout/AppLayout.vue';
 import { useAuth } from '@/stores/auth';
 import { canAccessRoute, getRequiredRoles } from '@/utils/accessControl';
 import { createRouter, createWebHistory } from 'vue-router';
@@ -15,12 +15,22 @@ const router = createRouter({
             children: [
                 {
                     path: '/',
-                    redirect: '/phrasenschwein'
+                    redirect: '/pigs'
+                },
+                {
+                    path: '/pigs',
+                    name: 'pigs',
+                    component: () => import('@/views/pigs/PigsHomeView.vue')
+                },
+                {
+                    path: '/pigs/:pigId',
+                    name: 'pig',
+                    component: () => import('@/views/pigs/PigBoardView.vue')
                 },
                 {
                     path: '/phrasenschwein',
                     name: 'phrasenschwein',
-                    component: () => import('@/views/phrasenschwein/PhrasenschweinView.vue')
+                    redirect: '/pigs'
                 },
                 {
                     path: '/dashboard',
@@ -64,6 +74,16 @@ const router = createRouter({
             path: '/landing',
             name: 'landing',
             component: () => import('@/views/pages/Landing.vue')
+        },
+        {
+            path: '/invite',
+            name: 'invite',
+            component: () => import('@/views/pigs/InviteView.vue')
+        },
+        {
+            path: '/invite/:token',
+            name: 'invite-token',
+            component: () => import('@/views/pigs/InviteView.vue')
         },
         {
             path: '/pages/notfound',

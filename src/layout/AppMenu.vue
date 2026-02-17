@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import AppMenuItem from './AppMenuItem.vue';
 import { computed } from 'vue';
 import { useAuth } from '@/stores/auth';
@@ -8,9 +8,9 @@ const { roles } = useAuth();
 
 const menuItems = [
     {
-        label: 'Phrasenschwein',
+        label: 'Phrasenschweine',
         icon: 'pi pi-fw pi-wallet',
-        to: '/phrasenschwein'
+        to: '/pigs'
     },
     {
         label: 'Dashboard',
@@ -57,3 +57,4 @@ const model = computed(() => menuItems.filter((item) => isVisibleForRoles(item, 
 </template>
 
 <style lang="scss" scoped></style>
+
