@@ -52,10 +52,5 @@ export const pigsApi = {
     async resetMine(pigId) {
         const response = await httpClient.post(`/api/pigs/${encodeURIComponent(pigId)}/reset`, {});
         return unwrapPayload(response);
-    },
-
-    async deleteMine(pigId, username) {
-        const response = await httpClient.delete(`/api/pigs/${encodeURIComponent(pigId)}/delete/${encodeURIComponent(username)}`);
-        return unwrapPayload(response);
     }
 };

@@ -177,20 +177,6 @@ const increment = async (name) => {
     }
 };
 
-const deleteName = async (name) => {
-    clearMessages();
-    setNamePending(name, true);
-    try {
-        await pigsApi.deleteMine(pigId.value, name);
-        await fetchNames();
-        infoMessage.value = `"${name}" wurde geloescht.`;
-    } catch (error) {
-        errorMessage.value = formatApiError(error, 'Name konnte nicht geloescht werden.');
-    } finally {
-        setNamePending(name, false);
-    }
-};
-
 const resetMine = async () => {
     clearMessages();
     loading.reset = true;
@@ -203,28 +189,6 @@ const resetMine = async () => {
     } finally {
         loading.reset = false;
     }
-};
-
-const requestDeleteName = (name) => {
-    confirm.require({
-        message: `"${name}" wirklich loeschen?`,
-        header: 'Name loeschen',
-        icon: 'pi pi-exclamation-triangle',
-        rejectProps: {
-            label: 'Abbrechen',
-            severity: 'secondary',
-            outlined: true,
-            size: 'small'
-        },
-        acceptProps: {
-            label: 'Loeschen',
-            severity: 'danger',
-            size: 'small'
-        },
-        accept: () => {
-            void deleteName(name);
-        }
-    });
 };
 
 const requestResetMine = () => {
@@ -475,7 +439,6 @@ watch(infoMessage, (message) => {
                             :disabledIncrement="isNamePending(entry.name) || !isOwnEntry(entry.name)"
                             :disabledDelete="isNamePending(entry.name) || !isOwnEntry(entry.name)"
                             @increment="increment"
-                            @delete="requestDeleteName"
                         />
                     </div>
                 </Panel>
@@ -490,4 +453,6 @@ watch(infoMessage, (message) => {
         <div v-else class="text-center text-color-secondary">Initialisiere...</div>
     </div>
 </template>
+
+
 
