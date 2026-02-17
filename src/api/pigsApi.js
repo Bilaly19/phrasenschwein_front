@@ -39,8 +39,8 @@ export const pigsApi = {
         return unwrapPayload(response);
     },
 
-    async updateConfig(pigId, valuePerClick) {
-        const response = await httpClient.post(`/api/pigs/${encodeURIComponent(pigId)}/config`, { valuePerClick });
+    async updateConfig(pigId, { valuePerClick, paypalLink } = {}) {
+        const response = await httpClient.post(`/api/pigs/${encodeURIComponent(pigId)}/config`, { valuePerClick, paypalLink });
         return unwrapPayload(response);
     },
 
@@ -54,3 +54,4 @@ export const pigsApi = {
         return unwrapPayload(response);
     }
 };
+

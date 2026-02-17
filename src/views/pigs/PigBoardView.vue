@@ -27,6 +27,7 @@ const latestInviteLink = ref('');
 
 const names = ref({});
 const valuePerClick = ref(0.5);
+const paypalLink = ref('');
 const authInitialized = ref(false);
 const authMode = ref('login');
 const prefilledUsername = ref('');
@@ -47,7 +48,20 @@ let saveTimer = null;
 
 const isPigAdmin = computed(() => pigRole.value === 'admin');
 const safeValuePerClick = computed(() => (Number.isFinite(valuePerClick.value) ? valuePerClick.value : 0));
+const safePaypalLink = computed(() => {
+    const raw = String(paypalLink.value || '').trim();
+    if (!raw) return '';
+    if (/^https?:\/\//i.test(raw)) return raw;
+    return `https://${raw.replace(/^\/+/, '')}`;
+});
 const ownEntryExists = computed(() => Boolean(username.value && Object.prototype.hasOwnProperty.call(names.value, username.value)));
+const ownClicks = computed(() => {
+    const me = username.value;
+    if (!me) return 0;
+    const entry = names.value?.[me];
+    return Number(entry?.clicks ?? entry?.count) || 0;
+});
+const ownAmount = computed(() => (ownClicks.value * safeValuePerClick.value).toFixed(2));
 
 const clearMessages = () => {
     errorMessage.value = '';
@@ -142,6 +156,7 @@ const loadConfig = async () => {
         const config = await pigsApi.getConfig(pigId.value);
         const nextValue = Number.parseFloat(config?.valuePerClick);
         valuePerClick.value = Number.isFinite(nextValue) ? nextValue : 0.5;
+        paypalLink.value = typeof config?.paypalLink === 'string' ? config.paypalLink : '';
     } catch (error) {
         errorMessage.value = formatApiError(error, 'Konfiguration konnte nicht geladen werden.');
     } finally {
@@ -150,12 +165,17 @@ const loadConfig = async () => {
     }
 };
 
-const saveConfig = async (val) => {
-    if (!Number.isFinite(val) || !pigId.value) return;
+const saveConfig = async ({ valuePerClick: nextValue, paypalLink: nextPaypalLink }) => {
+    if (!Number.isFinite(nextValue) || !pigId.value) return;
 
     loading.saveConfig = true;
     try {
-        await pigsApi.updateConfig(pigId.value, val);
+        const rawPaypal = typeof nextPaypalLink === 'string' ? nextPaypalLink.trim() : '';
+        const normalizedPaypal = rawPaypal && !/^https?:\/\//i.test(rawPaypal) ? `https://${rawPaypal.replace(/^\/+/, '')}` : rawPaypal;
+        await pigsApi.updateConfig(pigId.value, {
+            valuePerClick: nextValue,
+            paypalLink: normalizedPaypal
+        });
     } catch (error) {
         errorMessage.value = formatApiError(error, 'Konfiguration konnte nicht gespeichert werden.');
     } finally {
@@ -193,8 +213,8 @@ const resetMine = async () => {
 
 const requestResetMine = () => {
     confirm.require({
-        message: 'Wirklich deinen Zaehler zuruecksetzen?',
-        header: 'Mein Zaehler',
+        message: 'Wenn du bezahlt hast, kannst du deinen Zaehler auf 0 setzen. Wirklich zuruecksetzen?',
+        header: 'Ich habe bezahlt',
         icon: 'pi pi-exclamation-triangle',
         rejectProps: {
             label: 'Abbrechen',
@@ -333,7 +353,7 @@ onBeforeUnmount(() => {
     if (saveTimer) window.clearTimeout(saveTimer);
 });
 
-watch(valuePerClick, (nextVal) => {
+watch([valuePerClick, paypalLink], ([nextVal, nextLink]) => {
     if (isInitializingConfig.value) return;
     if (!isPigAdmin.value) return;
 
@@ -347,7 +367,10 @@ watch(valuePerClick, (nextVal) => {
             return;
         }
 
-        saveConfig(nextVal);
+        saveConfig({
+            valuePerClick: nextVal,
+            paypalLink: typeof nextLink === 'string' ? nextLink.trim() : ''
+        });
     }, 500);
 });
 
@@ -401,17 +424,50 @@ watch(infoMessage, (message) => {
                 <Panel header="Konfiguration" class="mb-3">
                     <div class="p-fluid">
                         <ClickValueInput v-model="valuePerClick" :disabled="loading.saveConfig || !isPigAdmin" />
-                        <small v-if="!isPigAdmin" class="text-color-secondary text-xs">Nur Admin kann den Wert aendern.</small>
+                        <div class="mt-3">
+                            <label class="block text-xs text-color-secondary mb-1">PayPal-Link (Empfaenger)</label>
+                            <InputText v-model="paypalLink" placeholder="https://paypal.me/deinname" :disabled="loading.saveConfig || !isPigAdmin" class="w-full" />
+                        </div>
+                        <small v-if="!isPigAdmin" class="text-color-secondary text-xs">Nur Admin kann Konfiguration aendern.</small>
                     </div>
                 </Panel>
 
                 <Panel header="Mein Eintrag" class="mb-3">
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="text-sm text-color-secondary">Du kannst nur deinen eigenen Namen inkrementieren.</div>
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="min-w-0">
+                            <div class="text-sm text-color-secondary">
+                                Du schuldest aktuell: <span class="font-semibold text-color">{{ ownAmount }} EUR</span>
+                                <span class="text-xs">({{ ownClicks }} Klicks)</span>
+                            </div>
+
+                            <a
+                                v-if="safePaypalLink"
+                                :href="safePaypalLink"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="mt-2 group flex items-center gap-3 rounded-lg border border-surface-200 bg-surface-0 px-3 py-2 shadow-sm hover:shadow transition-shadow"
+                            >
+                                <div class="h-9 w-9 rounded-md bg-[#003087] text-white flex items-center justify-center font-bold">
+                                    P
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-sm font-semibold leading-tight">
+                                        <span class="text-[#003087]">Pay</span><span class="text-[#009cde]">Pal</span>
+                                        <span class="ml-2 font-normal text-color-secondary">oeffnen</span>
+                                    </div>
+                                    <div class="text-xs text-color-secondary truncate">Empfaenger-Link ist pro Phrasenschwein konfigurierbar.</div>
+                                </div>
+                                <i class="pi pi-external-link ml-auto text-color-secondary group-hover:text-color" />
+                            </a>
+                            <small v-else class="block mt-2 text-xs text-color-secondary">
+                                Kein PayPal-Link hinterlegt. Admin kann ihn in der Konfiguration setzen.
+                            </small>
+                        </div>
+
                         <div class="flex gap-2">
                             <Button
-                                icon="pi pi-refresh"
-                                label="Zuruecksetzen"
+                                icon="pi pi-check"
+                                label="Ich habe bezahlt"
                                 severity="secondary"
                                 size="small"
                                 class="p-button-sm"
