@@ -1,7 +1,12 @@
 <script setup>
 import AppMenuItem from './AppMenuItem.vue';
+import { computed } from 'vue';
+import { useAuth } from '@/stores/auth';
+import { hasAnyRequiredRole } from '@/utils/accessControl';
 
-const model = [
+const { roles } = useAuth();
+
+const menuItems = [
     {
         label: 'Phrasenschwein',
         icon: 'pi pi-fw pi-wallet',
@@ -21,8 +26,25 @@ const model = [
         label: 'Statistik',
         icon: 'pi pi-fw pi-chart-line',
         to: '/statistik'
+    },
+    {
+        label: 'Admin',
+        icon: 'pi pi-fw pi-shield',
+        to: '/admin',
+        roles: ['admin']
     }
 ];
+
+const isVisibleForRoles = (item, currentRoles) => {
+    const requiredRoles = item.roles ?? item.role;
+    if (!requiredRoles) {
+        return true;
+    }
+
+    return hasAnyRequiredRole(currentRoles, requiredRoles);
+};
+
+const model = computed(() => menuItems.filter((item) => isVisibleForRoles(item, roles.value)));
 </script>
 
 <template>

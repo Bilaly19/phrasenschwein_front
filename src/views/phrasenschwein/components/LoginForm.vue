@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { useToast } from 'primevue/usetoast';
-import { authApi, clearAuthorizationToken, getErrorMessage, namesApi } from '@/api';
+import { authApi, clearAuthorizationToken, getErrorMessage } from '@/api';
 import { useAuth } from '@/stores/auth';
 import { resolveSessionRoles } from '@/utils/authRoles';
 
@@ -26,10 +26,6 @@ const authDebug = (...args) => {
 };
 
 const asObject = (value) => (value && typeof value === 'object' ? value : {});
-const getPendingNameEntryKey = (value) =>
-    `ps:pending-name-entry:${String(value || '')
-        .trim()
-        .toLowerCase()}`;
 const extractToken = (payload) => {
     const source = asObject(payload);
     return String(source.token || source.accessToken || source.jwt || '').trim();
@@ -84,18 +80,6 @@ const login = async () => {
         } catch (sessionError) {
             authDebug('[auth] /api/session status:', sessionError?.status ?? 'n/a');
             authDebug('[auth] login session sync failed:', sessionError?.status ?? sessionError);
-        }
-
-        const pendingNameEntryKey = getPendingNameEntryKey(resolvedUsername);
-        const shouldEnsureNameEntry = window.localStorage.getItem(pendingNameEntryKey) === '1';
-        if (shouldEnsureNameEntry) {
-            try {
-                await namesApi.incrementName(resolvedUsername);
-                window.localStorage.removeItem(pendingNameEntryKey);
-                authDebug('[auth] ensured name entry after registration:', resolvedUsername);
-            } catch (nameEntryError) {
-                authDebug('[auth] failed to ensure name entry after registration:', resolvedUsername, nameEntryError?.status ?? nameEntryError);
-            }
         }
 
         emit('login-success');

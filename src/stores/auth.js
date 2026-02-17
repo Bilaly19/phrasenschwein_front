@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue';
 import { normalizeRoles } from '@/utils/authRoles';
+import { hasAnyRequiredRole } from '@/utils/accessControl';
 
 const TOKEN_STORAGE_KEY = 'token';
 const USERNAME_STORAGE_KEY = 'username';
@@ -44,7 +45,7 @@ const persistAuth = () => {
 
 export const useAuth = () => {
     const isAuthenticated = computed(() => Boolean(token.value));
-    const hasRole = (role) => roles.value.includes(role);
+    const hasRole = (requiredRoles) => hasAnyRequiredRole(roles.value, requiredRoles);
 
     const login = (nextToken, nextUsername, nextRoles = []) => {
         token.value = nextToken;

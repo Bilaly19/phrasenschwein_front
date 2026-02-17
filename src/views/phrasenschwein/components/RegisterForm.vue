@@ -18,10 +18,6 @@ const fieldErrors = ref({
     password: ''
 });
 const USERNAME_REGEX = /^[a-zA-Z0-9._-]+$/;
-const getPendingNameEntryKey = (value) =>
-    `ps:pending-name-entry:${String(value || '')
-        .trim()
-        .toLowerCase()}`;
 const asObject = (value) => (value && typeof value === 'object' ? value : {});
 const extractToken = (payload) => {
     const source = asObject(payload);
@@ -70,7 +66,7 @@ const toReadableValidationMessage = (path, message = '') => {
 const mapBackendValidationErrors = (apiError) => {
     const nextFieldErrors = { firstName: '', lastName: '', username: '', password: '' };
 
-    if (apiError?.code === 'USER_EXISTS') {
+    if (apiError?.code === 'USERNAME_TAKEN' || apiError?.code === 'NAME_ALREADY_EXISTS') {
         nextFieldErrors.username = 'Benutzername existiert bereits.';
         return nextFieldErrors;
     }
@@ -119,7 +115,6 @@ const register = async () => {
         const resultPayload = Object.keys(nestedPayload).length ? nestedPayload : responseObject;
 
         toast.add({ severity: 'success', summary: 'Registrierung', detail: 'Registrierung erfolgreich', life: 2500 });
-        window.localStorage.setItem(getPendingNameEntryKey(payload.username), '1');
         emit('register-success', {
             username: payload.username,
             token: extractToken(resultPayload) || extractToken(responseObject) || null,
@@ -129,8 +124,8 @@ const register = async () => {
         const serverFieldErrors = mapBackendValidationErrors(e);
         if (hasFieldErrors(serverFieldErrors)) {
             fieldErrors.value = serverFieldErrors;
-            if (e?.code === 'USER_EXISTS') {
-                error.value = '[USER_EXISTS] Bitte waehle einen anderen Benutzernamen.';
+            if (e?.code === 'USERNAME_TAKEN' || e?.code === 'NAME_ALREADY_EXISTS') {
+                error.value = `[${e.code}] Bitte waehle einen anderen Benutzernamen.`;
             } else if (e?.code === 'VALIDATION_ERROR' || Array.isArray(e?.details)) {
                 error.value = '[VALIDATION_ERROR] Bitte korrigiere die markierten Felder.';
             } else {

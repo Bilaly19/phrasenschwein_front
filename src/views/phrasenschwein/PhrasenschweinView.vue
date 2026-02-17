@@ -20,7 +20,6 @@ const valuePerClick = ref(0.5);
 const authInitialized = ref(false);
 const authMode = ref('login');
 const prefilledUsername = ref('');
-const pendingEnsureUsername = ref('');
 const paypalUrl = ref((import.meta.env.VITE_PAYPAL_URL || '').trim());
 const errorMessage = ref('');
 const infoMessage = ref('');
@@ -70,7 +69,7 @@ const nameEntries = computed(() =>
     }))
 );
 const namesCount = computed(() => nameEntries.value.length);
-const totalClicks = computed(() => nameEntries.value.reduce((sum, entry) => sum + (Number(entry.data?.count) || 0), 0));
+const totalClicks = computed(() => nameEntries.value.reduce((sum, entry) => sum + (Number(entry.data?.clicks ?? entry.data?.count) || 0), 0));
 const totalAmount = computed(() => (totalClicks.value * safeValuePerClick.value).toFixed(2));
 const hasNames = computed(() => namesCount.value > 0);
 const isOwnEntry = (entryName) => entryName === username.value;
@@ -85,10 +84,25 @@ const setNamePending = (name, active) => {
     pendingNames.value = next;
 };
 
+const normalizeNamesPayload = (payload) => {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+
+    if (payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data)) {
+        return payload.data;
+    }
+
+    return payload;
+};
+
 const fetchNames = async () => {
     loading.fetchNames = true;
     try {
-        names.value = await namesApi.getNames();
+        const payload = await namesApi.getNames();
+        const normalized = normalizeNamesPayload(payload);
+        if (!normalized) {
+            throw new Error('Ungueltiges Namen-Format von der API.');
+        }
+        names.value = normalized;
     } catch (error) {
         errorMessage.value = formatApiError(error, 'Namen konnten nicht geladen werden.');
     } finally {
@@ -121,29 +135,6 @@ const saveConfig = async (val) => {
         errorMessage.value = formatApiError(error, 'Konfiguration konnte nicht gespeichert werden.');
     } finally {
         loading.saveConfig = false;
-    }
-};
-
-const ensureOwnNameEntry = async (targetUsername = username.value, force = false) => {
-    const normalizedUsername = String(targetUsername || '').trim();
-    if (!normalizedUsername) {
-        return;
-    }
-
-    const hasOwnEntry = names.value && typeof names.value === 'object' && Object.prototype.hasOwnProperty.call(names.value, normalizedUsername);
-    if (!force && hasOwnEntry) {
-        return;
-    }
-
-    try {
-        await namesApi.incrementName(normalizedUsername);
-        names.value = await namesApi.getNames();
-        if (pendingEnsureUsername.value === normalizedUsername) {
-            pendingEnsureUsername.value = '';
-        }
-        authDebug('[auth] own username auto-added to names list:', normalizedUsername);
-    } catch (error) {
-        authDebug('[auth] failed to auto-add own username to names list:', normalizedUsername, error?.status ?? error);
     }
 };
 
@@ -253,8 +244,6 @@ const onLogin = async () => {
     clearMessages();
     authMode.value = 'login';
     await Promise.all([fetchNames(), loadConfig()]);
-    const targetUsername = pendingEnsureUsername.value || username.value;
-    await ensureOwnNameEntry(targetUsername, Boolean(pendingEnsureUsername.value));
     toast.add({ severity: 'success', summary: 'Erfolg', detail: 'Login erfolgreich', life: 2800 });
 };
 
@@ -263,7 +252,6 @@ const onRegisterSuccess = async (payload) => {
     const nextUsername = String(payload?.username || '').trim();
     const nextToken = String(payload?.token || '').trim();
     const nextRoles = payload?.roles || [];
-    pendingEnsureUsername.value = nextUsername;
     toast.add({ severity: 'success', summary: 'Erfolg', detail: 'Registrierung erfolgreich', life: 2800 });
 
     if (nextToken) {
@@ -286,6 +274,7 @@ const onUnauthorized = (event) => {
 
 const initializeAuth = async () => {
     const storedToken = token.value;
+    const initToken = storedToken;
     authDebug('[auth] token loaded from storage:', storedToken ? 'present' : 'missing');
 
     if (disableAutoLogin) {
@@ -308,14 +297,21 @@ const initializeAuth = async () => {
     try {
         const session = await authApi.getSession();
         authDebug('[auth] /api/session status:', 200);
+        if (token.value !== initToken) {
+            authDebug('[auth] initializeAuth ignored (token changed during request)');
+            return;
+        }
         const resolvedUsername = session?.username || username.value;
         const resolvedRoles = resolveSessionRoles(session);
         setAuthState(storedToken, resolvedUsername, resolvedRoles);
         authDebug('[auth] session validation result: valid');
         await Promise.all([fetchNames(), loadConfig()]);
-        await ensureOwnNameEntry();
     } catch (error) {
         authDebug('[auth] /api/session status:', error?.status ?? 'n/a');
+        if (token.value !== initToken) {
+            authDebug('[auth] initializeAuth error ignored (token changed during request)');
+            return;
+        }
         clearAuthorizationToken();
         resetAuth();
         names.value = {};

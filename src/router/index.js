@@ -1,5 +1,6 @@
 import AppLayout from '@/layout/AppLayout.vue';
 import { useAuth } from '@/stores/auth';
+import { canAccessRoute, getRequiredRoles } from '@/utils/accessControl';
 import { createRouter, createWebHistory } from 'vue-router';
 
 const router = createRouter({
@@ -40,7 +41,7 @@ const router = createRouter({
                     path: '/admin',
                     name: 'admin',
                     component: () => import('@/views/admin/AdminView.vue'),
-                    meta: { role: 'admin' }
+                    meta: { roles: ['admin'] }
                 },
                 {
                     path: '/pages/empty',
@@ -79,22 +80,22 @@ const router = createRouter({
 
 router.beforeEach((to) => {
     const { roles } = useAuth();
-    const requiredRole = to.meta?.role;
+    const requiredRoles = getRequiredRoles(to.meta);
 
-    if (!requiredRole) {
+    if (!requiredRoles.length) {
         return true;
     }
 
-    const requiredRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-    const hasRequiredRole = requiredRoles.some((role) => roles.value.includes(role));
-
-    if (hasRequiredRole) {
+    if (canAccessRoute(to.meta, roles.value)) {
         return true;
     }
 
     return {
         name: 'forbidden',
-        query: { redirect: to.fullPath }
+        query: {
+            redirect: to.fullPath,
+            required: requiredRoles.join(',')
+        }
     };
 });
 
