@@ -28,6 +28,7 @@ const latestInviteLink = ref('');
 const names = ref({});
 const valuePerClick = ref(0.5);
 const paypalLink = ref('');
+const lastSavedConfig = ref({ valuePerClick: 0.5, paypalLink: '' });
 const authInitialized = ref(false);
 const authMode = ref('login');
 const prefilledUsername = ref('');
@@ -48,12 +49,13 @@ let saveTimer = null;
 
 const isPigAdmin = computed(() => pigRole.value === 'admin');
 const safeValuePerClick = computed(() => (Number.isFinite(valuePerClick.value) ? valuePerClick.value : 0));
-const safePaypalLink = computed(() => {
-    const raw = String(paypalLink.value || '').trim();
+const normalizePaypalLink = (val) => {
+    const raw = String(val || '').trim();
     if (!raw) return '';
     if (/^https?:\/\//i.test(raw)) return raw;
     return `https://${raw.replace(/^\/+/, '')}`;
-});
+};
+const safePaypalLink = computed(() => normalizePaypalLink(paypalLink.value));
 const ownEntryExists = computed(() => Boolean(username.value && Object.prototype.hasOwnProperty.call(names.value, username.value)));
 const ownClicks = computed(() => {
     const me = username.value;
@@ -155,8 +157,11 @@ const loadConfig = async () => {
     try {
         const config = await pigsApi.getConfig(pigId.value);
         const nextValue = Number.parseFloat(config?.valuePerClick);
-        valuePerClick.value = Number.isFinite(nextValue) ? nextValue : 0.5;
-        paypalLink.value = typeof config?.paypalLink === 'string' ? config.paypalLink : '';
+        const resolvedValue = Number.isFinite(nextValue) ? nextValue : 0.5;
+        const resolvedPaypal = typeof config?.paypalLink === 'string' ? config.paypalLink : '';
+        valuePerClick.value = resolvedValue;
+        paypalLink.value = resolvedPaypal;
+        lastSavedConfig.value = { valuePerClick: resolvedValue, paypalLink: normalizePaypalLink(resolvedPaypal) };
     } catch (error) {
         errorMessage.value = formatApiError(error, 'Konfiguration konnte nicht geladen werden.');
     } finally {
@@ -170,17 +175,38 @@ const saveConfig = async ({ valuePerClick: nextValue, paypalLink: nextPaypalLink
 
     loading.saveConfig = true;
     try {
-        const rawPaypal = typeof nextPaypalLink === 'string' ? nextPaypalLink.trim() : '';
-        const normalizedPaypal = rawPaypal && !/^https?:\/\//i.test(rawPaypal) ? `https://${rawPaypal.replace(/^\/+/, '')}` : rawPaypal;
+        const normalizedPaypal = normalizePaypalLink(nextPaypalLink);
         await pigsApi.updateConfig(pigId.value, {
             valuePerClick: nextValue,
             paypalLink: normalizedPaypal
         });
+        lastSavedConfig.value = { valuePerClick: nextValue, paypalLink: normalizedPaypal };
     } catch (error) {
         errorMessage.value = formatApiError(error, 'Konfiguration konnte nicht gespeichert werden.');
     } finally {
         loading.saveConfig = false;
     }
+};
+
+const isConfigDirty = computed(() => {
+    const currentValue = Number.isFinite(valuePerClick.value) ? valuePerClick.value : 0.5;
+    const currentPaypal = normalizePaypalLink(paypalLink.value);
+    return currentValue !== lastSavedConfig.value.valuePerClick || currentPaypal !== lastSavedConfig.value.paypalLink;
+});
+
+const flushConfigSave = async () => {
+    if (isInitializingConfig.value) return;
+    if (!isPigAdmin.value) return;
+    if (!pigId.value) return;
+    if (!isConfigDirty.value) return;
+
+    if (saveTimer) {
+        window.clearTimeout(saveTimer);
+        saveTimer = null;
+    }
+
+    const currentValue = Number.isFinite(valuePerClick.value) ? valuePerClick.value : 0.5;
+    await saveConfig({ valuePerClick: currentValue, paypalLink: paypalLink.value });
 };
 
 const increment = async (name) => {
@@ -237,6 +263,8 @@ const handleLogout = async () => {
     clearMessages();
     loading.logout = true;
     try {
+        // best-effort: don't lose pending auto-save on logout
+        await flushConfigSave();
         await authApi.logout();
     } catch (error) {
         errorMessage.value = formatApiError(error, 'Logout konnte nicht vollstaendig abgeschlossen werden.');
@@ -356,6 +384,7 @@ onBeforeUnmount(() => {
 watch([valuePerClick, paypalLink], ([nextVal, nextLink]) => {
     if (isInitializingConfig.value) return;
     if (!isPigAdmin.value) return;
+    if (!isConfigDirty.value) return;
 
     if (saveTimer) {
         window.clearTimeout(saveTimer);
@@ -371,7 +400,7 @@ watch([valuePerClick, paypalLink], ([nextVal, nextLink]) => {
             valuePerClick: nextVal,
             paypalLink: typeof nextLink === 'string' ? nextLink.trim() : ''
         });
-    }, 500);
+    }, 2000);
 });
 
 watch(errorMessage, (message) => {
@@ -426,7 +455,13 @@ watch(infoMessage, (message) => {
                         <ClickValueInput v-model="valuePerClick" :disabled="loading.saveConfig || !isPigAdmin" />
                         <div class="mt-3">
                             <label class="block text-xs text-color-secondary mb-1">PayPal-Link (Empfaenger)</label>
-                            <InputText v-model="paypalLink" placeholder="https://paypal.me/deinname" :disabled="loading.saveConfig || !isPigAdmin" class="w-full" />
+                            <InputText
+                                v-model="paypalLink"
+                                placeholder="https://paypal.me/deinname"
+                                :disabled="loading.saveConfig || !isPigAdmin"
+                                class="w-full"
+                                @blur="flushConfigSave"
+                            />
                         </div>
                         <small v-if="!isPigAdmin" class="text-color-secondary text-xs">Nur Admin kann Konfiguration aendern.</small>
                     </div>
