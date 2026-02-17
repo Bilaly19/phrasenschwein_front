@@ -469,10 +469,13 @@ watch(infoMessage, (message) => {
                             :key="entry.name"
                             :name="entry.name"
                             :data="entry.data"
-                            :is-own="isOwnEntry(entry.name)"
-                            :pending="isNamePending(entry.name)"
-                            @increment="increment(entry.name)"
-                            @delete="requestDeleteName(entry.name)"
+                            :valuePerClick="safeValuePerClick"
+                            :canIncrement="isOwnEntry(entry.name)"
+                            :canDelete="isOwnEntry(entry.name)"
+                            :disabledIncrement="isNamePending(entry.name) || !isOwnEntry(entry.name)"
+                            :disabledDelete="isNamePending(entry.name) || !isOwnEntry(entry.name)"
+                            @increment="increment"
+                            @delete="requestDeleteName"
                         />
                     </div>
                 </Panel>
@@ -487,3 +490,4 @@ watch(infoMessage, (message) => {
         <div v-else class="text-center text-color-secondary">Initialisiere...</div>
     </div>
 </template>
+

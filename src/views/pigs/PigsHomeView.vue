@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
@@ -206,6 +206,18 @@ onMounted(() => {
 onBeforeUnmount(() => {
     window.removeEventListener('auth:unauthorized', onUnauthorized);
 });
+watch(
+    () => token.value,
+    (nextToken, prevToken) => {
+        if (nextToken && nextToken !== prevToken) {
+            void fetchPigs();
+        }
+
+        if (!nextToken && prevToken) {
+            pigs.value = [];
+        }
+    }
+);
 
 watch(errorMessage, (message) => {
     if (!message) return;
@@ -281,3 +293,4 @@ watch(infoMessage, (message) => {
         <div v-else class="text-center text-color-secondary">Initialisiere...</div>
     </div>
 </template>
+
