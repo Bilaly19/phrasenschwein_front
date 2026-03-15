@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue';
-import { defineStore } from 'pinia';
+import { defineStore, storeToRefs } from 'pinia';
 import { normalizeRoles } from '@/utils/authRoles';
 import { hasAnyRequiredRole } from '@/utils/accessControl';
 
@@ -71,8 +71,22 @@ export const useAuthStore = defineStore('auth', () => {
     };
 });
 
-// Backwards-compatible composable — same interface as before
-export const useAuth = () => useAuthStore();
+// Backwards-compatible composable — returns Refs (not unwrapped values) to match old interface
+export const useAuth = () => {
+    const store = useAuthStore();
+    const { token, username, roles, isAuthenticated } = storeToRefs(store);
+    return {
+        token,
+        username,
+        roles,
+        isAuthenticated,
+        hasRole: store.hasRole,
+        login: store.login,
+        logout: store.logout,
+        reset: store.reset,
+        clearAuthState: store.clearAuthState
+    };
+};
 
 // Reads from localStorage directly so it works outside of Pinia context (e.g. axios interceptors at module init)
 export const getAuthToken = () => localStorage.getItem(TOKEN_STORAGE_KEY);
