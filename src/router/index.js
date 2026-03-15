@@ -2,6 +2,25 @@
 import { useAuth } from '@/stores/auth';
 import { canAccessRoute, getRequiredRoles } from '@/utils/accessControl';
 import { createRouter, createWebHistory } from 'vue-router';
+const resolveDefaultStartRoute = () => {
+    const fallback = '/pigs';
+    const allowed = new Set(['/pigs', '/dashboard', '/statistik']);
+
+    if (typeof window === 'undefined') {
+        return fallback;
+    }
+
+    try {
+        const saved = window.localStorage.getItem('defaultStartRoute');
+        if (saved && allowed.has(saved)) {
+            return saved;
+        }
+    } catch {
+        // ignore localStorage access errors
+    }
+
+    return fallback;
+};
 
 const router = createRouter({
     history: createWebHistory(),
@@ -15,7 +34,7 @@ const router = createRouter({
             children: [
                 {
                     path: '/',
-                    redirect: '/pigs'
+                    redirect: () => resolveDefaultStartRoute()
                 },
                 {
                     path: '/pigs',
@@ -40,12 +59,17 @@ const router = createRouter({
                 {
                     path: '/einstellungen',
                     name: 'einstellungen',
-                    component: () => import('@/views/pages/Empty.vue')
+                    component: () => import('@/views/settings/SettingsView.vue')
                 },
                 {
                     path: '/statistik',
                     name: 'statistik',
-                    component: () => import('@/views/pages/Empty.vue')
+                    component: () => import('@/views/statistics/StatisticsView.vue')
+                },
+                {
+                    path: '/assistant',
+                    name: 'assistant',
+                    component: () => import('@/views/assistant/AssistantView.vue')
                 },
                 {
                     path: '/admin',
@@ -120,3 +144,4 @@ router.beforeEach((to) => {
 });
 
 export default router;
+

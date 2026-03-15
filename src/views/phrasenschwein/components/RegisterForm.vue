@@ -146,16 +146,16 @@ const register = async () => {
 </script>
 
 <template>
-    <Card class="auth-card">
+    <Card class="auth-card apple-auth-card apple-reveal">
         <template #title>
-            <p class="text-xs uppercase tracking-[0.2em] text-primary">Neues Konto</p>
-            <h2 class="mt-1 text-lg font-semibold mb-3">Registrieren</h2>
+            <p class="apple-auth-kicker text-xs uppercase tracking-[0.2em] text-primary">Neues Konto</p>
+            <h2 class="apple-auth-title mt-1 text-lg font-semibold mb-3">Registrieren</h2>
         </template>
         <template #subtitle>
-            <p class="text-sm opacity-80 mb-3">Lege dein Profil an und starte direkt los.</p>
+            <p class="apple-auth-subtitle text-sm opacity-80 mb-3">Lege dein Profil an und starte direkt los.</p>
         </template>
         <template #content>
-            <div class="p-fluid text-sm flex flex-col gap-2">
+            <div class="apple-auth-fields p-fluid text-sm flex flex-col gap-2">
                 <IconField>
                     <InputIcon class="pi pi-id-card" />
                     <InputText v-model="firstName" placeholder="Vorname" :disabled="isSubmitting" class="w-full p-inputtext-sm" @keyup.enter="register" />
@@ -187,11 +187,11 @@ const register = async () => {
                 <small class="text-red-400" v-if="fieldErrors.password">{{ fieldErrors.password }}</small>
             </div>
 
-            <Button @click="register" :disabled="isSubmitting" :label="isSubmitting ? 'Bitte warten...' : 'Konto erstellen'" icon="pi pi-user-plus" size="small" class="mt-3 w-full p-button-sm" />
+            <Button @click="register" :disabled="isSubmitting" :label="isSubmitting ? 'Bitte warten...' : 'Konto erstellen'" icon="pi pi-user-plus" size="small" class="apple-auth-submit mt-3 w-full p-button-sm" />
 
             <Message v-if="error" severity="error" class="mt-3">{{ error }}</Message>
 
-            <div class="mt-3 text-sm text-color-secondary">
+            <div class="apple-auth-switch mt-3 text-sm text-color-secondary">
                 Schon registriert?
                 <Button label="Einloggen" link size="small" class="p-0 ml-1 align-baseline" @click="$emit('switch')" />
             </div>

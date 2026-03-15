@@ -187,17 +187,29 @@ watch(infoMessage, (message) => {
 </script>
 
 <template>
-    <div class="p-4 flex justify-center">
-        <div class="w-full max-w-xl">
-            <Card>
+    <div class="apple-scene apple-invite p-4 flex justify-center">
+        <div class="w-full max-w-2xl">
+            <section class="apple-hero apple-reveal mb-3">
+                <div class="min-w-0">
+                    <p class="apple-hero__eyebrow">Invite</p>
+                    <h1 class="apple-hero__title">Phrasenschwein beitreten</h1>
+                    <p class="apple-hero__subtitle">Registriere dich oder logge dich ein. Danach wird der Invite automatisch angenommen.</p>
+                </div>
+                <div class="apple-quick-stats">
+                    <span class="apple-stat-pill">Sicherer Einladungslink</span>
+                    <span class="apple-stat-pill">Direkter Board-Zugang</span>
+                </div>
+            </section>
+
+            <Card class="apple-invite-card apple-reveal apple-reveal-delay-1">
                 <template #title>
                     <div class="min-w-0">
-                        <p class="text-xs uppercase tracking-[0.2em] text-primary">Invite</p>
-                        <h1 class="mt-1 text-xl font-semibold leading-tight">Phrasenschwein beitreten</h1>
+                        <p class="apple-auth-kicker text-xs uppercase tracking-[0.2em] text-primary">Invite</p>
+                        <h1 class="apple-auth-title mt-1 text-xl font-semibold leading-tight">Code bestaetigen</h1>
                     </div>
                 </template>
                 <template #subtitle>
-                    <p class="text-sm text-color-secondary">Registriere dich (oder logge dich ein), dann trittst du automatisch bei.</p>
+                    <p class="apple-auth-subtitle text-sm text-color-secondary">Du kannst den Code direkt verwenden oder den Link aus der Einladung oeffnen.</p>
                 </template>
                 <template #content>
                     <div class="p-fluid mb-3">

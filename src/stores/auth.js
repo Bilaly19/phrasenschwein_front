@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue';
+import { defineStore } from 'pinia';
 import { normalizeRoles } from '@/utils/authRoles';
 import { hasAnyRequiredRole } from '@/utils/accessControl';
 
@@ -6,15 +7,8 @@ const TOKEN_STORAGE_KEY = 'token';
 const USERNAME_STORAGE_KEY = 'username';
 const ROLES_STORAGE_KEY = 'roles';
 
-const readStoredToken = () => localStorage.getItem(TOKEN_STORAGE_KEY);
-
-const token = ref(readStoredToken());
-const username = ref(localStorage.getItem(USERNAME_STORAGE_KEY));
-const roles = ref(parseStoredRoles(localStorage.getItem(ROLES_STORAGE_KEY)));
-
 function parseStoredRoles(rawRoles) {
     if (!rawRoles) return [];
-
     try {
         const parsed = JSON.parse(rawRoles);
         return normalizeRoles(parsed, { ensureUser: true });
@@ -23,28 +17,31 @@ function parseStoredRoles(rawRoles) {
     }
 }
 
-const persistAuth = () => {
-    if (token.value) {
-        localStorage.setItem(TOKEN_STORAGE_KEY, token.value);
-    } else {
-        localStorage.removeItem(TOKEN_STORAGE_KEY);
-    }
+export const useAuthStore = defineStore('auth', () => {
+    const token = ref(localStorage.getItem(TOKEN_STORAGE_KEY));
+    const username = ref(localStorage.getItem(USERNAME_STORAGE_KEY));
+    const roles = ref(parseStoredRoles(localStorage.getItem(ROLES_STORAGE_KEY)));
 
-    if (username.value) {
-        localStorage.setItem(USERNAME_STORAGE_KEY, username.value);
-    } else {
-        localStorage.removeItem(USERNAME_STORAGE_KEY);
-    }
-
-    if (roles.value.length) {
-        localStorage.setItem(ROLES_STORAGE_KEY, JSON.stringify(roles.value));
-    } else {
-        localStorage.removeItem(ROLES_STORAGE_KEY);
-    }
-};
-
-export const useAuth = () => {
     const isAuthenticated = computed(() => Boolean(token.value));
+
+    const persistAuth = () => {
+        if (token.value) {
+            localStorage.setItem(TOKEN_STORAGE_KEY, token.value);
+        } else {
+            localStorage.removeItem(TOKEN_STORAGE_KEY);
+        }
+        if (username.value) {
+            localStorage.setItem(USERNAME_STORAGE_KEY, username.value);
+        } else {
+            localStorage.removeItem(USERNAME_STORAGE_KEY);
+        }
+        if (roles.value.length) {
+            localStorage.setItem(ROLES_STORAGE_KEY, JSON.stringify(roles.value));
+        } else {
+            localStorage.removeItem(ROLES_STORAGE_KEY);
+        }
+    };
+
     const hasRole = (requiredRoles) => hasAnyRequiredRole(roles.value, requiredRoles);
 
     const login = (nextToken, nextUsername, nextRoles = []) => {
@@ -72,6 +69,10 @@ export const useAuth = () => {
         reset: clearAuthState,
         clearAuthState
     };
-};
+});
 
-export const getAuthToken = () => token.value || readStoredToken();
+// Backwards-compatible composable — same interface as before
+export const useAuth = () => useAuthStore();
+
+// Reads from localStorage directly so it works outside of Pinia context (e.g. axios interceptors at module init)
+export const getAuthToken = () => localStorage.getItem(TOKEN_STORAGE_KEY);

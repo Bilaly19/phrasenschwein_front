@@ -31,7 +31,7 @@ const euroBetrag = computed(() => {
 </script>
 
 <template>
-    <Card>
+    <Card class="apple-name-entry">
         <template #content>
             <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0">

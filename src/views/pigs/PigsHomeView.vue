@@ -231,24 +231,31 @@ watch(infoMessage, (message) => {
 </script>
 
 <template>
-    <div class="p-2">
+    <div class="apple-scene apple-home p-2">
         <div v-if="authInitialized && isAuthenticated" class="mx-auto w-full max-w-6xl text-sm">
-            <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <section class="apple-hero apple-reveal">
                 <div class="min-w-0">
-                    <h1 class="text-xl font-semibold leading-tight">Meine Phrasenschweine</h1>
-                    <p class="mt-1 text-sm text-color-secondary">Erstelle ein neues oder tritt per Invite bei.</p>
+                    <p class="apple-hero__eyebrow">Phrasenschwein</p>
+                    <h1 class="apple-hero__title">Meine Phrasenschweine</h1>
+                    <p class="apple-hero__subtitle">Erstelle ein neues Board oder tritt per Invite bei. Alles schnell, klar und fokussiert.</p>
+                    <div class="apple-quick-stats">
+                        <span class="apple-stat-pill">{{ pigsCount }} aktive Boards</span>
+                        <span class="apple-stat-pill">Invite per Link oder Code</span>
+                        <span class="apple-stat-pill">Direkter Zugriff in Sekunden</span>
+                    </div>
                 </div>
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <Tag :value="`Eingeloggt als @${username}`" severity="info" class="text-xs w-fit" />
-                    <Button icon="pi pi-sign-out" label="Logout" severity="secondary" size="small" class="p-button-sm w-full sm:w-auto" :disabled="loading.logout" @click="handleLogout" />
+                <div class="apple-hero__actions">
+                    <Tag :value="`Eingeloggt als @${username}`" severity="info" class="apple-pill text-xs w-fit" />
+                    <Button icon="pi pi-sign-out" label="Logout" severity="secondary" size="small" class="apple-pill p-button-sm w-full sm:w-auto" :disabled="loading.logout" @click="handleLogout" />
                 </div>
-            </div>
+            </section>
 
-            <Message v-if="errorMessage" severity="error" class="mb-3">{{ errorMessage }}</Message>
-            <Message v-if="infoMessage" severity="success" class="mb-3">{{ infoMessage }}</Message>
+            <Message v-if="errorMessage" severity="error" class="apple-banner mb-3 mt-3">{{ errorMessage }}</Message>
+            <Message v-if="infoMessage" severity="success" class="apple-banner mb-3 mt-3">{{ infoMessage }}</Message>
 
+            <p class="apple-section-headline apple-reveal apple-reveal-delay-1">Starten</p>
             <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <Panel header="Neu erstellen">
+                <Panel header="Neu erstellen" class="apple-panel apple-reveal apple-reveal-delay-1">
                     <div class="p-fluid">
                         <label class="text-xs text-color-secondary">Titel (optional)</label>
                         <InputText v-model="newTitle" placeholder="z.B. WG-Kueche" class="w-full" :disabled="loading.create" />
@@ -256,7 +263,7 @@ watch(infoMessage, (message) => {
                     </div>
                 </Panel>
 
-                <Panel header="Mit Invite beitreten">
+                <Panel header="Mit Invite beitreten" class="apple-panel apple-reveal apple-reveal-delay-2">
                     <div class="p-fluid">
                         <label class="text-xs text-color-secondary">Code oder Link-Token</label>
                         <InputText v-model="inviteCode" placeholder="Invite-Code einfuegen" class="w-full" :disabled="loading.join" />
@@ -265,11 +272,12 @@ watch(infoMessage, (message) => {
                 </Panel>
             </div>
 
-            <Panel class="mt-3" :header="`Deine Phrasenschweine (${pigsCount})`">
+            <p class="apple-section-headline apple-reveal apple-reveal-delay-2">Deine Boards</p>
+            <Panel class="apple-panel apple-home-list mt-2 apple-reveal apple-reveal-delay-2" :header="`Deine Phrasenschweine (${pigsCount})`">
                 <div v-if="loading.list" class="text-color-secondary">Laedt...</div>
                 <div v-else-if="!pigsCount" class="text-color-secondary">Noch keine. Erstelle eins oder tritt bei.</div>
                 <div v-else class="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <Card v-for="pig in pigs" :key="pig.id">
+                    <Card v-for="pig in pigs" :key="pig.id" class="apple-card">
                         <template #title>
                             <div class="flex items-center justify-between gap-2">
                                 <span class="truncate">{{ pig.title || 'Phrasenschwein' }}</span>
@@ -285,12 +293,12 @@ watch(infoMessage, (message) => {
             </Panel>
         </div>
 
-        <div v-else-if="authInitialized && !isAuthenticated" class="mx-auto max-w-xl">
+        <div v-else-if="authInitialized && !isAuthenticated" class="mx-auto max-w-xl apple-auth-wrap">
             <RegisterForm v-if="authMode === 'register'" @switch="authMode = 'login'" @register-success="onRegisterSuccess" />
             <LoginForm v-else :prefill-username="prefilledUsername" @switch-register="authMode = 'register'" @login-success="onLogin" />
         </div>
 
-        <div v-else class="text-center text-color-secondary">Initialisiere...</div>
+        <div v-else class="text-center text-color-secondary apple-reveal">Initialisiere...</div>
     </div>
 </template>
 

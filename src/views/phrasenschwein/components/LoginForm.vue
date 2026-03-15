@@ -101,16 +101,16 @@ const login = async () => {
 </script>
 
 <template>
-    <Card class="auth-card">
+    <Card class="auth-card apple-auth-card apple-reveal">
         <template #title>
-            <p class="text-xs uppercase tracking-[0.2em] text-primary">Willkommen</p>
-            <h2 class="mt-1 text-lg font-semibold mb-3">Login</h2>
+            <p class="apple-auth-kicker text-xs uppercase tracking-[0.2em] text-primary">Willkommen</p>
+            <h2 class="apple-auth-title mt-1 text-lg font-semibold mb-3">Login</h2>
         </template>
         <template #subtitle>
-            <p class="text-sm opacity-80 mb-3">Melde dich an und fuettere das Phrasenschwein.</p>
+            <p class="apple-auth-subtitle text-sm opacity-80 mb-3">Melde dich an und fuettere das Phrasenschwein.</p>
         </template>
         <template #content>
-            <div class="p-fluid text-sm flex flex-col gap-2">
+            <div class="apple-auth-fields p-fluid text-sm flex flex-col gap-2">
                 <IconField>
                     <InputIcon class="pi pi-user" />
                     <InputText v-model="localUsername" placeholder="Benutzername" :disabled="isSubmitting" class="w-full p-inputtext-sm" @keyup.enter="login" />
@@ -120,9 +120,9 @@ const login = async () => {
                     <Password v-model="password" placeholder="Passwort" :disabled="isSubmitting" :feedback="false" toggleMask inputClass="w-full p-inputtext-sm" class="w-full" @keyup.enter="login" />
                 </IconField>
             </div>
-            <Button @click="login" :disabled="isSubmitting" :label="isSubmitting ? 'Bitte warten...' : 'Einloggen'" icon="pi pi-sign-in" size="small" class="mt-3 w-full p-button-sm" />
+            <Button @click="login" :disabled="isSubmitting" :label="isSubmitting ? 'Bitte warten...' : 'Einloggen'" icon="pi pi-sign-in" size="small" class="apple-auth-submit mt-3 w-full p-button-sm" />
             <Message v-if="error" severity="error" class="mt-3">{{ error }}</Message>
-            <div class="mt-3 text-sm text-color-secondary">
+            <div class="apple-auth-switch mt-3 text-sm text-color-secondary">
                 Noch kein Konto?
                 <Button label="Registrieren" link size="small" class="p-0 ml-1 align-baseline" @click="$emit('switch-register')" />
             </div>

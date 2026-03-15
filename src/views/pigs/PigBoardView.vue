@@ -128,13 +128,15 @@ const loadPigMeta = async () => {
     pigRole.value = current.role || 'member';
 };
 
-const fetchNames = async () => {
+const fetchNames = async ({ silent = false } = {}) => {
     if (!pigId.value) {
         errorMessage.value = 'Phrasenschwein fehlt.';
         return;
     }
 
-    loading.fetchNames = true;
+    if (!silent) {
+        loading.fetchNames = true;
+    }
     try {
         const payload = await pigsApi.getNames(pigId.value);
         const normalized = normalizeNamesPayload(payload);
@@ -145,7 +147,9 @@ const fetchNames = async () => {
     } catch (error) {
         errorMessage.value = formatApiError(error, 'Namen konnten nicht geladen werden.');
     } finally {
-        loading.fetchNames = false;
+        if (!silent) {
+            loading.fetchNames = false;
+        }
     }
 };
 
@@ -212,11 +216,29 @@ const flushConfigSave = async () => {
 const increment = async (name) => {
     clearMessages();
     setNamePending(name, true);
+    const previousEntry = names.value?.[name] ? { ...names.value[name] } : null;
+    if (previousEntry) {
+        const nextClicks = (Number(previousEntry.clicks ?? previousEntry.count) || 0) + 1;
+        names.value = {
+            ...names.value,
+            [name]: {
+                ...previousEntry,
+                clicks: nextClicks,
+                lastClickAt: new Date().toISOString()
+            }
+        };
+    }
+
     try {
         await pigsApi.incrementMine(pigId.value, name);
-        await fetchNames();
-        infoMessage.value = `${name} wurde erhoeht.`;
+        void fetchNames({ silent: true });
     } catch (error) {
+        if (previousEntry) {
+            names.value = {
+                ...names.value,
+                [name]: previousEntry
+            };
+        }
         errorMessage.value = formatApiError(error, 'Zaehler konnte nicht erhoeht werden.');
     } finally {
         setNamePending(name, false);
@@ -226,11 +248,30 @@ const increment = async (name) => {
 const resetMine = async () => {
     clearMessages();
     loading.reset = true;
+    const ownName = username.value;
+    const previousEntry = ownName && names.value?.[ownName] ? { ...names.value[ownName] } : null;
+    if (previousEntry && ownName) {
+        names.value = {
+            ...names.value,
+            [ownName]: {
+                ...previousEntry,
+                clicks: 0,
+                lastClickAt: null
+            }
+        };
+    }
+
     try {
         await pigsApi.resetMine(pigId.value);
-        await fetchNames();
+        void fetchNames({ silent: true });
         infoMessage.value = 'Mein Zaehler wurde zurueckgesetzt.';
     } catch (error) {
+        if (previousEntry && ownName) {
+            names.value = {
+                ...names.value,
+                [ownName]: previousEntry
+            };
+        }
         errorMessage.value = formatApiError(error, 'Zaehler konnte nicht zurueckgesetzt werden.');
     } finally {
         loading.reset = false;
@@ -239,7 +280,7 @@ const resetMine = async () => {
 
 const requestResetMine = () => {
     confirm.require({
-        message: 'Wenn du bezahlt hast, kannst du deinen Zaehler auf 0 setzen. Wirklich zuruecksetzen?',
+        message: 'Glückwunsch! Du hast bezahlt',
         header: 'Ich habe bezahlt',
         icon: 'pi pi-exclamation-triangle',
         rejectProps: {
@@ -415,42 +456,44 @@ watch(infoMessage, (message) => {
 </script>
 
 <template>
-    <div class="p-2">
+    <div class="apple-scene apple-board p-2">
         <ConfirmDialog />
 
         <div v-if="authInitialized && isAuthenticated" class="mx-auto w-full max-w-6xl text-sm">
-            <AppShell>
+            <AppShell class="apple-reveal">
                 <template #title>
                     <div class="min-w-0">
-                        <h1 class="text-xl font-semibold leading-tight">{{ pigTitle || 'Phrasenschwein' }}</h1>
-                        <p class="mt-1 text-sm text-color-secondary">Pig-ID: {{ pigId }}</p>
+                        <p class="apple-hero__eyebrow">Board</p>
+                        <h1 class="apple-hero__title">{{ pigTitle || 'Phrasenschwein' }}</h1>
+                        <p class="apple-hero__subtitle">Pig-ID: {{ pigId }}</p>
                     </div>
                 </template>
                 <template #actions>
-                    <Button icon="pi pi-arrow-left" label="Zurueck" severity="secondary" size="small" class="p-button-sm w-full sm:w-auto" @click="router.push({ name: 'pigs' })" />
-                    <Tag :value="`Eingeloggt als @${username}`" severity="info" class="text-xs w-fit" />
-                    <Tag :value="isPigAdmin ? 'Admin' : 'Mitglied'" :severity="isPigAdmin ? 'success' : 'secondary'" class="text-xs w-fit" />
-                    <Button icon="pi pi-users" label="Invite" severity="secondary" size="small" class="p-button-sm w-full sm:w-auto" :disabled="loading.invite || !isPigAdmin" @click="createInvite" />
-                    <Button icon="pi pi-sign-out" label="Logout" severity="secondary" size="small" class="p-button-sm w-full sm:w-auto" :disabled="loading.logout" @click="handleLogout" />
+                    <Button icon="pi pi-arrow-left" label="Zurueck" severity="secondary" size="small" class="apple-pill p-button-sm w-full sm:w-auto" @click="router.push({ name: 'pigs' })" />
+                    <Tag :value="`Eingeloggt als @${username}`" severity="info" class="apple-pill text-xs w-fit" />
+                    <Tag :value="isPigAdmin ? 'Admin' : 'Mitglied'" :severity="isPigAdmin ? 'success' : 'secondary'" class="apple-pill text-xs w-fit" />
+                    <Button icon="pi pi-users" label="Invite" severity="secondary" size="small" class="apple-pill p-button-sm w-full sm:w-auto" :disabled="loading.invite || !isPigAdmin" @click="createInvite" />
+                    <Button icon="pi pi-sign-out" label="Logout" severity="secondary" size="small" class="apple-pill p-button-sm w-full sm:w-auto" :disabled="loading.logout" @click="handleLogout" />
                 </template>
 
-                <Message v-if="latestInviteLink" severity="info" class="mb-3">
+                <Message v-if="latestInviteLink" severity="info" class="apple-banner mb-3">
                     Invite-Link (1 Woche gueltig): <span class="font-mono break-all">{{ latestInviteLink }}</span>
                 </Message>
 
-                <div class="mb-3 grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <Panel header="Namen">
-                        <p class="text-lg font-semibold">{{ namesCount }}</p>
+                <div class="apple-metric-grid mb-3">
+                    <Panel header="Namen" class="apple-panel apple-metric apple-reveal apple-reveal-delay-1">
+                        <p class="apple-metric-number">{{ namesCount }}</p>
                     </Panel>
-                    <Panel header="Klicks gesamt">
-                        <p class="text-lg font-semibold">{{ totalClicks }}</p>
+                    <Panel header="Klicks gesamt" class="apple-panel apple-metric apple-reveal apple-reveal-delay-2">
+                        <p class="apple-metric-number">{{ totalClicks }}</p>
                     </Panel>
-                    <Panel header="Wert gesamt">
-                        <p class="text-lg font-semibold">{{ totalAmount }} EUR</p>
+                    <Panel header="Wert gesamt" class="apple-panel apple-metric apple-reveal apple-reveal-delay-3">
+                        <p class="apple-metric-number">{{ totalAmount }} EUR</p>
                     </Panel>
                 </div>
 
-                <Panel header="Konfiguration" class="mb-3">
+                <p class="apple-section-headline">Konfiguration</p>
+                <Panel header="Konfiguration" class="apple-panel mb-3">
                     <div class="p-fluid">
                         <ClickValueInput v-model="valuePerClick" :disabled="loading.saveConfig || !isPigAdmin" />
                         <div class="mt-3">
@@ -467,7 +510,8 @@ watch(infoMessage, (message) => {
                     </div>
                 </Panel>
 
-                <Panel header="Mein Eintrag" class="mb-3">
+                <p class="apple-section-headline">Mein Betrag</p>
+                <Panel header="Mein Eintrag" class="apple-panel mb-3">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div class="min-w-0">
                             <div class="text-sm text-color-secondary">
@@ -480,7 +524,7 @@ watch(infoMessage, (message) => {
                                 :href="safePaypalLink"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                class="mt-2 group flex items-center gap-3 rounded-lg border border-surface-200 bg-surface-0 px-3 py-2 shadow-sm hover:shadow transition-shadow"
+                                class="apple-paypal mt-2 group flex items-center gap-3 rounded-lg border border-surface-200 bg-surface-0 px-3 py-2 shadow-sm hover:shadow transition-shadow"
                             >
                                 <div class="h-9 w-9 rounded-md bg-[#003087] text-white flex items-center justify-center font-bold">
                                     P
@@ -505,7 +549,7 @@ watch(infoMessage, (message) => {
                                 label="Ich habe bezahlt"
                                 severity="secondary"
                                 size="small"
-                                class="p-button-sm"
+                                class="apple-pill p-button-sm"
                                 :disabled="loading.reset || !ownEntryExists"
                                 @click="requestResetMine"
                             />
@@ -513,8 +557,9 @@ watch(infoMessage, (message) => {
                     </div>
                 </Panel>
 
-                <Panel header="Board">
-                    <div v-if="loading.fetchNames" class="text-color-secondary">Laedt...</div>
+                <p class="apple-section-headline">Board</p>
+                <Panel header="Board" class="apple-panel apple-board-list">
+                    <div v-if="loading.fetchNames && !hasNames" class="text-color-secondary">Laedt...</div>
 
                     <div v-else-if="!hasNames" class="text-color-secondary">Noch keine Eintraege.</div>
 
@@ -542,7 +587,5 @@ watch(infoMessage, (message) => {
         <div v-else class="text-center text-color-secondary">Initialisiere...</div>
     </div>
 </template>
-
-
 
 

@@ -28,6 +28,11 @@ const menuItems = [
         to: '/statistik'
     },
     {
+        label: 'PhrasenAgent',
+        icon: 'pi pi-fw pi-comments',
+        to: '/assistant'
+    },
+    {
         label: 'Admin',
         icon: 'pi pi-fw pi-shield',
         to: '/admin',

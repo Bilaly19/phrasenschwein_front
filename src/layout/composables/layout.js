@@ -1,12 +1,54 @@
 import { computed, reactive } from 'vue';
 
+const THEME_STORAGE_KEY = 'phrasenschwein.theme';
+
+const readStoredThemePreference = () => {
+    if (typeof window === 'undefined') return null;
+
+    try {
+        const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+        if (stored === 'dark' || stored === 'light') return stored;
+    } catch {
+        // Ignore storage access errors (e.g. blocked in privacy mode).
+    }
+
+    return null;
+};
+
+const resolveInitialDarkTheme = () => {
+    const stored = readStoredThemePreference();
+    if (stored) return stored === 'dark';
+
+    if (typeof window === 'undefined') return false;
+
+    return Boolean(window.matchMedia?.('(prefers-color-scheme: dark)')?.matches);
+};
+
+const syncDarkModeClass = (enabled) => {
+    if (typeof document === 'undefined') return;
+
+    document.documentElement.classList.toggle('app-dark', enabled);
+};
+
+const persistThemePreference = (enabled) => {
+    if (typeof window === 'undefined') return;
+
+    try {
+        window.localStorage.setItem(THEME_STORAGE_KEY, enabled ? 'dark' : 'light');
+    } catch {
+        // Ignore storage access errors.
+    }
+};
+
 const layoutConfig = reactive({
     preset: 'Aura',
     primary: 'emerald',
     surface: null,
-    darkTheme: false,
+    darkTheme: resolveInitialDarkTheme(),
     menuMode: 'static'
 });
+
+syncDarkModeClass(layoutConfig.darkTheme);
 
 const layoutState = reactive({
     staticMenuInactive: false,
@@ -27,12 +69,13 @@ export function useLayout() {
             return;
         }
 
-        document.startViewTransition(() => executeDarkModeToggle(event));
+        document.startViewTransition(() => executeDarkModeToggle());
     };
 
     const executeDarkModeToggle = () => {
         layoutConfig.darkTheme = !layoutConfig.darkTheme;
-        document.documentElement.classList.toggle('app-dark');
+        syncDarkModeClass(layoutConfig.darkTheme);
+        persistThemePreference(layoutConfig.darkTheme);
     };
 
     const toggleMenu = () => {

@@ -1,19 +1,19 @@
 <template>
-    <div class="flex flex-col gap-3">
-        <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex items-center gap-2 min-w-0">
+    <div class="apple-shell flex flex-col gap-4">
+        <header class="apple-shell__header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="apple-shell__title flex items-center gap-2 min-w-0">
                 <slot name="title" />
             </div>
-            <div class="flex flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <div class="apple-shell__actions flex flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                 <slot name="actions" />
             </div>
         </header>
 
-        <div class="flex flex-col gap-3 lg:flex-row">
-            <aside v-if="$slots.sidebar" class="w-full lg:w-64">
+        <div class="apple-shell__body flex flex-col gap-3 lg:flex-row">
+            <aside v-if="$slots.sidebar" class="apple-shell__sidebar w-full lg:w-64">
                 <slot name="sidebar" />
             </aside>
-            <main class="flex-1 min-w-0">
+            <main class="apple-shell__main flex-1 min-w-0">
                 <slot />
             </main>
         </div>

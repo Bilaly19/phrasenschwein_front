@@ -1,6 +1,7 @@
 <script setup>
 import { useLayout } from '@/layout/composables/layout';
 import { computed } from 'vue';
+import PhrasenAgentWidget from '@/components/assistant/PhrasenAgentWidget.vue';
 import AppSidebar from './AppSidebar.vue';
 import AppTopbar from './AppTopbar.vue';
 
@@ -31,4 +32,5 @@ const containerClass = computed(() => {
         <div class="layout-mask animate-fadein" @click="hideMobileMenu" />
     </div>
     <Toast position="top-right" />
+    <PhrasenAgentWidget />
 </template>
